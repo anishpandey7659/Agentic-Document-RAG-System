@@ -1,0 +1,38 @@
+{
+  "doc-2fd8f544": {
+    "doc_id": "doc-2fd8f544",
+    "summary": "AIRA 2 is an AI research agent that overcomes bottlenecks in AI research, achieving state-of-the-art results on complex machine learning tasks. It uses asynchronous multi-GPU execution, evolutionary search, and hidden consistent evaluation to enable dynamic scoping and interactive debugging.",
+    "keywords": [
+      "AIRA 2",
+      "AI research agent",
+      "asynchronous multi-GPU execution",
+      "evolutionary search",
+      "hidden consistent evaluation"
+    ],
+    "vector_db": "doc-2fd8f544-index",
+    "metadata": {
+      "type": "document_agent",
+      "status": "active",
+      "embed_model": "mistral-embed",
+      "file_name": "paper.pdf"
+    }
+  },
+  "doc-38599d31": {
+    "doc_id": "doc-38599d31",
+    "summary": "The document outlines a comprehensive learning path for mastering automation and AI-powered workflows, launching a successful automation agency, and a 4-step sequence for offering high-ticket services. It covers tools, AI agent architecture, and business growth phases.",
+    "keywords": [
+      "automation",
+      "AI",
+      "workflows",
+      "agency",
+      "business growth"
+    ],
+    "vector_db": "doc-38599d31-index",
+    "metadata": {
+      "type": "document_agent",
+      "status": "active",
+      "embed_model": "mistral-embed",
+      "file_name": "agentic_ai_automation_guidebook.docx"
+    }
+  }
+}
