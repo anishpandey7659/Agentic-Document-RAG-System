@@ -34,5 +34,41 @@
       "embed_model": "mistral-embed",
       "file_name": "agentic_ai_automation_guidebook.docx"
     }
+  },
+  "doc-7e7ee849": {
+    "doc_id": "doc-7e7ee849",
+    "summary": "Mistral 7B is a high-performing, efficient 7B-parameter language model that outperforms Llama 2 (13B) and rivals larger models. It features improved reasoning, math, and code generation capabilities, with a focus on safety and efficiency, making it suitable for real-world applications.",
+    "keywords": [
+      "Mistral 7B",
+      "Language Model",
+      "Efficiency",
+      "Safety",
+      "Performance"
+    ],
+    "vector_db": "doc-7e7ee849-index",
+    "metadata": {
+      "type": "document_agent",
+      "status": "active",
+      "embed_model": "mistral-embed",
+      "file_name": "Mistral7B.pdf"
+    }
+  },
+  "doc-4b16ef58": {
+    "doc_id": "doc-4b16ef58",
+    "summary": "Agentic AI systems enable autonomous planning, acting, and adapting to achieve goals. The market is projected to reach $200 billion by 2034, with applications in auditing, drug research, and customer service, and is expected to make 15% of day-to-day work decisions autonomously by 2028.",
+    "keywords": [
+      "Agentic AI",
+      "Autonomous Systems",
+      "AI Market",
+      "Artificial Intelligence",
+      "Automation"
+    ],
+    "vector_db": "doc-4b16ef58-index",
+    "metadata": {
+      "type": "document_agent",
+      "status": "active",
+      "embed_model": "mistral-embed",
+      "file_name": "agentic_ai.txt"
+    }
   }
 }

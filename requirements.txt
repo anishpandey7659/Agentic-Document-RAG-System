@@ -1,0 +1,11 @@
+mistralai
+PyPDF2
+python-docx
+langchain
+langgraph
+python-dotenv
+pydantic
+pinecone
+groq
+
+# pip install -r requirements.txt
