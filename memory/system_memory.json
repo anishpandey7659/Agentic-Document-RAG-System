@@ -1,74 +1,20 @@
 {
-  "doc-2fd8f544": {
-    "doc_id": "doc-2fd8f544",
-    "summary": "AIRA 2 is an AI research agent that overcomes bottlenecks in AI research, achieving state-of-the-art results on complex machine learning tasks. It uses asynchronous multi-GPU execution, evolutionary search, and hidden consistent evaluation to enable dynamic scoping and interactive debugging.",
+  "doc-a2cfc6f2": {
+    "doc_id": "doc-a2cfc6f2",
+    "summary": "Nepal's political landscape transformed with a Gen Z-led uprising and the Rastriya Swatantra Party's landslide victory, led by 36-year-old Balen Shah, marking a break from traditional politics and corruption.",
     "keywords": [
-      "AIRA 2",
-      "AI research agent",
-      "asynchronous multi-GPU execution",
-      "evolutionary search",
-      "hidden consistent evaluation"
+      "Nepal",
+      "Gen Z",
+      "Rastriya Swatantra Party",
+      "Balen Shah",
+      "corruption"
     ],
-    "vector_db": "doc-2fd8f544-index",
+    "vector_db": "doc-a2cfc6f2-index",
     "metadata": {
       "type": "document_agent",
       "status": "active",
       "embed_model": "mistral-embed",
-      "file_name": "paper.pdf"
-    }
-  },
-  "doc-38599d31": {
-    "doc_id": "doc-38599d31",
-    "summary": "The document outlines a comprehensive learning path for mastering automation and AI-powered workflows, launching a successful automation agency, and a 4-step sequence for offering high-ticket services. It covers tools, AI agent architecture, and business growth phases.",
-    "keywords": [
-      "automation",
-      "AI",
-      "workflows",
-      "agency",
-      "business growth"
-    ],
-    "vector_db": "doc-38599d31-index",
-    "metadata": {
-      "type": "document_agent",
-      "status": "active",
-      "embed_model": "mistral-embed",
-      "file_name": "agentic_ai_automation_guidebook.docx"
-    }
-  },
-  "doc-7e7ee849": {
-    "doc_id": "doc-7e7ee849",
-    "summary": "Mistral 7B is a high-performing, efficient 7B-parameter language model that outperforms Llama 2 (13B) and rivals larger models. It features improved reasoning, math, and code generation capabilities, with a focus on safety and efficiency, making it suitable for real-world applications.",
-    "keywords": [
-      "Mistral 7B",
-      "Language Model",
-      "Efficiency",
-      "Safety",
-      "Performance"
-    ],
-    "vector_db": "doc-7e7ee849-index",
-    "metadata": {
-      "type": "document_agent",
-      "status": "active",
-      "embed_model": "mistral-embed",
-      "file_name": "Mistral7B.pdf"
-    }
-  },
-  "doc-4b16ef58": {
-    "doc_id": "doc-4b16ef58",
-    "summary": "Agentic AI systems enable autonomous planning, acting, and adapting to achieve goals. The market is projected to reach $200 billion by 2034, with applications in auditing, drug research, and customer service, and is expected to make 15% of day-to-day work decisions autonomously by 2028.",
-    "keywords": [
-      "Agentic AI",
-      "Autonomous Systems",
-      "AI Market",
-      "Artificial Intelligence",
-      "Automation"
-    ],
-    "vector_db": "doc-4b16ef58-index",
-    "metadata": {
-      "type": "document_agent",
-      "status": "active",
-      "embed_model": "mistral-embed",
-      "file_name": "agentic_ai.txt"
+      "file_name": "nepal_political_summary.txt"
     }
   }
 }

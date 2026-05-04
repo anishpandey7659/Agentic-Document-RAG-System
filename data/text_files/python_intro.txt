@@ -24,3 +24,5 @@ Types of Machine Learning:
 3. Reinforcement Learning: Learning through rewards and penalties
 
 Applications include image recognition, speech processing, and recommendation systems
+
+
