@@ -74,8 +74,8 @@ A production-ready **Retrieval-Augmented Generation (RAG)** pipeline that lets y
 ## 📦 Installation
 
 ```bash
-git clone https://github.com/yourusername/agentic-rag.git
-cd agentic-rag
+git clone https://github.com/anishpandey7659/Agentic-Document-RAG-System.git
+cd Agentic-Document-RAG-System
 
 pip install -r requirements.txt
 ```
@@ -83,12 +83,15 @@ pip install -r requirements.txt
 ### requirements.txt
 
 ```
-groq
 mistralai
-pinecone
-pydantic
 PyPDF2
 python-docx
+langchain
+langgraph
+python-dotenv
+pydantic
+pinecone
+groq
 ```
 
 ---
