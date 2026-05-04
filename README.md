@@ -11,35 +11,36 @@ A production-ready **Retrieval-Augmented Generation (RAG)** pipeline that lets y
                         ───────────────
   PDF / DOCX / TXT
         │
-        ├──── Extract text
+        ├──── Extract text           (pipeline/extract.py)
         │
         ├──── Clean + normalize
         │
         ├──── ┌─────────────────────────────────┐
-        │     │  Two separate chunking paths    │
+        │     │  Two separate chunking paths    │  (pipeline/chunker.py)
         │     │                                 │
         │     │  Vector DB chunks (400 words)   │──→ Mistral Embed ──→ Pinecone
         │     │  Summary chunks  (12,000 chars) │──→ Groq LLM      ──→ summary + keywords
-        │     └─────────────────────────────────┘
+        │     └─────────────────────────────────┘       (pipeline/summarize_chunks.py)
         │
-        └──── Register agent → system_memory.json
+        └──── Register agent → memory/system_memory.json
+                                    (memory/memory_manager.py)
 
 
                         RETRIEVAL PIPELINE
                         ──────────────────
   User Query
         │
-        ├──── LLM Router reads system_memory.json
+        ├──── LLM Router reads system_memory.json      (services/router.py)
         │     (summaries + keywords of all docs)
         │     → decides which doc_ids are relevant
         │
-        ├──── Embed query with Mistral
+        ├──── Embed query with Mistral                 (services/embedder.py)
         │
-        ├──── Search ONLY relevant Pinecone indexes
-        │
+        ├──── Search ONLY relevant Pinecone indexes    (services/pinecone_client.py)
+        │                                              (pipeline/docs_search.py)
         ├──── Build context from top-K chunks
         │
-        └──── Groq LLM answers from context
+        └──── Groq LLM answers from context            (services/llm.py)
 ```
 
 ---
@@ -51,7 +52,7 @@ A production-ready **Retrieval-Augmented Generation (RAG)** pipeline that lets y
 - **Smart summarization** — map-reduce approach handles documents of any size; splits into chunks, summarizes each, merges results
 - **Structured outputs** — Pydantic schemas enforce LLM response format, no fragile regex parsing
 - **Rate limit handling** — proactive token tracking + exponential backoff retry for Groq free tier
-- **Persistent memory** — `system_memory.json` stores agent metadata so documents survive process restarts
+- **Persistent memory** — `memory/system_memory.json` stores agent metadata so documents survive process restarts
 - **Multi-format support** — PDF, DOCX, and TXT documents
 
 ---
@@ -117,7 +118,7 @@ export PINECONE_API_KEY="your_pinecone_api_key"
 ### 1. Upload a document
 
 ```python
-from document_upload_pipeline import upload_document_pipeline
+from pipeline.upload import upload_document_pipeline
 
 agent = upload_document_pipeline("research_paper.pdf")
 
@@ -129,7 +130,7 @@ print(agent.keywords)        # ["attention", "transformer", ...]
 ### 2. Ask a question
 
 ```python
-from document_retrieval_pipeline import retrieve_and_answer
+from pipeline.retrieval import retrieve_and_answer
 
 answer = retrieve_and_answer(
     query="What is the attention mechanism?",
@@ -140,24 +141,10 @@ answer = retrieve_and_answer(
 print(answer)
 ```
 
-### 3. See all uploaded documents
+### 3. Run via CLI
 
-```python
-from document_retrieval_pipeline import list_available_documents
-
-list_available_documents()
-```
-
-```
-=======================================================
-  doc_id               keywords
-=======================================================
-  doc-a1b2c3d4         attention, transformer, encoder, decoder, NLP
-                       Introduces Transformer architecture using self-attention...
-  -------------------------------------------------------
-  doc-e5f6g7h8         revenue, sales, Q3, growth, forecast
-                       Q3 2024 sales report showing 23% revenue growth...
-  -------------------------------------------------------
+```bash
+python main.py
 ```
 
 ---
@@ -165,20 +152,53 @@ list_available_documents()
 ## 📁 Project Structure
 
 ```
-agentic-rag/
+AGENTIC-RAG/
 │
-├── document_upload_pipeline.py     # Upload + index documents
-├── document_retrieval_pipeline.py  # Query + answer from documents
-├── system_memory.json              # Auto-generated — agent registry
-├── requirements.txt
-└── README.md
+├── api/                            # API layer (if applicable)
+│
+├── data/                           # Sample documents for testing
+│   ├── docx/
+│   ├── pdf/
+│   └── text_files/
+│
+├── memory/                         # Persistent agent registry
+│   ├── memory_manager.py           # Read/write agent metadata
+│   └── system_memory.json          # Auto-generated — stores all doc agents
+│
+├── models/                         # Pydantic schemas & data models
+│   ├── __init__.py
+│   └── schemas.py                  # Structured output schemas for LLM responses
+│
+├── pipeline/                       # Core document processing steps
+│   ├── __init__.py
+│   ├── chunker.py                  # Split documents into vector + summary chunks
+│   ├── docs_search.py              # Search Pinecone for relevant chunks
+│   ├── extract.py                  # Extract text from PDF / DOCX / TXT
+│   ├── retrieval.py                # End-to-end retrieval + answer pipeline
+│   ├── summarize_chunks.py         # Map-reduce summarization for large docs
+│   └── upload.py                   # End-to-end upload + indexing pipeline
+│
+├── services/                       # External service clients
+│   ├── __init__.py
+│   ├── Document_agents.py          # Agent dataclass and registry logic
+│   ├── embedder.py                 # Mistral embedding calls
+│   ├── llm.py                      # Groq LLM calls (chat + summarization)
+│   ├── pinecone_client.py          # Pinecone index management + upsert/query
+│   ├── rate_limiting.py            # Token tracking + retry/backoff logic
+│   └── router.py                   # LLM-powered document relevance router
+│
+├── .gitignore
+├── config.py                       # Centralized config (model names, chunk sizes, etc.)
+├── main.py                         # Entry point
+├── README.md
+└── requirements.txt
 ```
 
 ---
 
 ## 🔄 How the Agent Router Works
 
-Instead of searching every Pinecone index on every query (expensive and slow), the router asks the LLM:
+Instead of searching every Pinecone index on every query (expensive and slow), the router (`services/router.py`) asks the LLM:
 
 ```
 "Here are all my documents with their summaries and keywords.
@@ -191,16 +211,16 @@ The LLM returns only the relevant `doc_ids`. Only those Pinecone indexes are sea
 10 documents uploaded
 User asks: "What is multi-head attention?"
 
-Router reads all 10 summaries + keywords
-→ LLM selects: ["doc-a1b2c3d4"]   (only the transformer paper)
-→ Search 1 index instead of 10    ← 90% fewer Pinecone calls
+Router reads all 10 summaries + keywords  ← services/router.py
+→ LLM selects: ["doc-a1b2c3d4"]           (only the transformer paper)
+→ Search 1 index instead of 10            ← 90% fewer Pinecone calls
 ```
 
 ---
 
 ## ⚠️ Groq Rate Limits
 
-Groq free tier has token-per-minute (TPM) limits. The pipeline handles this automatically with:
+Groq free tier has token-per-minute (TPM) limits. The pipeline handles this automatically in `services/rate_limiting.py` with:
 
 - **Proactive token tracking** — monitors tokens used per 60s window
 - **Auto-pause** — waits for window reset before hitting the limit
