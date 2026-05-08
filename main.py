@@ -1,13 +1,25 @@
-from pipeline import retrieve_and_answer
-from services import list_available_documents
+import uvicorn
+from fastapi import FastAPI
+from api import chat,router  
+from fastapi.middleware.cors import CORSMiddleware
 
-if __name__ == "__main__":
+app = FastAPI(title="File Upload API")
 
-    list_available_documents()
 
-    answer = retrieve_and_answer(
-        query="How is the recent Market of AI",
-        top_k=5,
-        show_chunks=True
-    )
-    print(f"\n[ANSWER]\n{answer}")
+
+origins = [
+    "http://localhost:5173",  # React app
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,   # 👈 IMPORTANT
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(router)
+app.include_router(chat)
+
+# Run using uvicorn main:app --reload

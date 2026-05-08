@@ -1,6 +1,6 @@
 import os
 import uuid
-from services import (create_document_agent,register_document_agent,generate_embeddings,store_in_pinecone)
+from services import (create_document_agent,register_document_agent,generate_embeddings,embed_both,store_in_pinecone)
 from pipeline import (chunk_text,clean_text,extract_text,summarize_and_extract_keywords)
 from models.schemas import DocumentAgent
 
@@ -29,10 +29,10 @@ def upload_document_pipeline(file_path: str) -> DocumentAgent:
         print(f"[INFO] Created {len(chunks)} chunks.")
 
         print("[INFO] Generating embeddings with Mistral...")
-        embeddings = generate_embeddings(chunks)
+        embeddings = embed_both(chunks, input_type="passage")
 
         print("[INFO] Storing in Pinecone...")
-        vector_db = store_in_pinecone(doc_id, chunks, embeddings)
+        vector_db = store_in_pinecone(doc_id, chunks,embeddings)
 
         print("[INFO] Summarizing document...")
         summary_data = summarize_and_extract_keywords(cleaned_text)

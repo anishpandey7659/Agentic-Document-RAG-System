@@ -6,7 +6,7 @@ def clean_text(text: str) -> str:
     text = re.sub(r"[^\w\s.,;:!?()-]", "", text)
     return text.strip()
 
-def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> List[str]:
+def chunk_text(text: str, chunk_size: int = 100, overlap: int = 20) -> List[str]:
     words = text.split()
 
     if not words:
@@ -25,3 +25,4 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> List[str]
             break
 
     return chunks
+

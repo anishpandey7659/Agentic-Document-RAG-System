@@ -10,5 +10,7 @@ groq
 fastapi[standard]
 uvicorn 
 python-multipart
+pinecone_text
+cohere
 
 # pip install -r requirements.txt

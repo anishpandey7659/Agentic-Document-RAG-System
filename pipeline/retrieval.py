@@ -1,5 +1,6 @@
 from pipeline import smart_search,build_context
-from config import Tool_MODEL,GROQ_API_KEY
+from .rerank import rerank_documents
+from config import Tool_MODEL,GROQ_API_KEY,COHERE_API_KEY
 from groq import Groq
 
 groq_client = Groq(api_key=GROQ_API_KEY)
@@ -28,9 +29,11 @@ Answer:
     )
     return response.choices[0].message.content.strip()
 
+
 def retrieve_and_answer(
     query: str,
-    top_k: int = 5,
+    alpha:float=0.7,
+    top_k: int = 6,
     show_chunks: bool = False
 ) -> str:
     """
@@ -42,16 +45,18 @@ def retrieve_and_answer(
     """
     print(f"\n[QUERY] {query}")
 
-    matches = smart_search(query, top_k=top_k)
+    matches = smart_search(query,alpha, top_k=top_k)
+    reranked_matches =rerank_documents(query,hybrid_results=matches,api_key=COHERE_API_KEY,top_n=3)
+    
 
-    if not matches:
+    if not reranked_matches:
         return "No relevant content found for your query."
 
     if show_chunks:
         print("\n--- Retrieved Chunks ---")
-        for m in matches:
-            print(f"  [score: {m['score']} | doc: {m['doc_id']}] {m['text'][:120]}...")
+        for m in reranked_matches:
+            print(f"Rank {m['rank']} (score={m['score']}) | {m['text']}")
         print("------------------------\n")
 
-    context = build_context(matches)
+    context = build_context(reranked_matches)
     return answer_query(query, context)
