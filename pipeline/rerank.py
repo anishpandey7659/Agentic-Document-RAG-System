@@ -26,6 +26,8 @@ def rerank_documents(query: str, hybrid_results: list[dict],api_key=COHERE_API_K
             "text": original_chunk["text"],
             "doc_id": original_chunk["doc_id"],
             "chunk_id": original_chunk["chunk_id"],
+            "domain": original_chunk["domain"],
+            "source": original_chunk["source"],
         })
 
     return results

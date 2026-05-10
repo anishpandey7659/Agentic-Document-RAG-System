@@ -1,7 +1,8 @@
-from config import EMBED_MODEL, MISTRAL_API_KEY
+from config import EMBED_MODEL, MISTRAL_API_KEY,EMBEDDING_FILE
 from mistralai.client import Mistral
 from typing import List, Dict
 from .pinecone_client import pc
+import pickle
 
 mistral_client = Mistral(api_key=MISTRAL_API_KEY)
 
@@ -81,4 +82,38 @@ def embed_both(texts: list[str], input_type: str = "passage") -> list[dict]:
         {"dense": d, "sparse": s}
         for d, s in zip(dense_results, sparse_results)
     ]
+
+import os
+import pickle
+
+
+
+
+def load_document_embeddings():
+
+    if not os.path.exists(EMBEDDING_FILE):
+        return {}
+    
+    if os.path.getsize(EMBEDDING_FILE) == 0:
+        return {}
+
+    try:
+        with open(EMBEDDING_FILE, "rb") as f:
+            return pickle.load(f)
+
+    except Exception as e:
+        print(f"[WARNING] Failed to load embeddings: {e}")
+        return {}
+
+
+def save_document_embedding(doc_id, embedding):
+
+    doc_embeddings = load_document_embeddings()
+
+    doc_embeddings[doc_id] = embedding
+
+    with open(EMBEDDING_FILE, "wb") as f:
+        pickle.dump(doc_embeddings, f)
+
+    print(f"[INFO] Saved embedding for {doc_id}")
 

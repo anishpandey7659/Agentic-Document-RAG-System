@@ -1,11 +1,12 @@
 import os
 import uuid
-from services import (create_document_agent,register_document_agent,generate_embeddings,embed_both,store_in_pinecone)
+from services import (create_document_agent,register_document_agent,generate_embeddings,embed_both,embed_dense,store_in_pinecone,save_document_embedding)
 from pipeline import (chunk_text,clean_text,extract_text,summarize_and_extract_keywords)
-from models.schemas import DocumentAgent
+from Model_Memory_store.models import DocumentAgent
+from config import INDEX_NAME
 
 
-def upload_document_pipeline(file_path: str) -> DocumentAgent:
+def upload_document_pipeline(file_path: str,index_name:str,domain:str) -> DocumentAgent:
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File not found: {file_path}")
 
@@ -27,18 +28,30 @@ def upload_document_pipeline(file_path: str) -> DocumentAgent:
         print("[INFO] Chunking text...")
         chunks = chunk_text(cleaned_text)
         print(f"[INFO] Created {len(chunks)} chunks.")
+        # print("\n",chunks[2])
+        # print("\n\n\n",chunks[3])
 
         print("[INFO] Generating embeddings with Mistral...")
         embeddings = embed_both(chunks, input_type="passage")
 
+
+
         print("[INFO] Storing in Pinecone...")
-        vector_db = store_in_pinecone(doc_id, chunks,embeddings)
+        vector_db = store_in_pinecone(doc_id, chunks,embeddings,index_name,file_name,domain)
 
         print("[INFO] Summarizing document...")
         summary_data = summarize_and_extract_keywords(cleaned_text)
+        
+        document_text = f"""
+        Title: {file_name}
+        Domain: {domain}
+        Summary: {summary_data["summary"]}
+        Keywords: {", ".join(summary_data["keywords"])}
+        """
+        embed_document=embed_dense(document_text, input_type="passage")
 
-        # ← file_name passed into agent creation
         agent = create_document_agent(doc_id, summary_data, vector_db, file_name)
+        save_document_embedding(doc_id,embed_document)
         register_document_agent(agent)
 
         print("[INFO] Pipeline complete.")
@@ -53,8 +66,8 @@ def upload_document_pipeline(file_path: str) -> DocumentAgent:
 
 if __name__ == "__main__":
     file_path = "/home/anish/Documents/Agentic-RAG/data/text_files/agentic_ai.txt"
-
-    agent = upload_document_pipeline(file_path)
+    domain="Agentic Ai"
+    agent = upload_document_pipeline(file_path,INDEX_NAME,domain)
 
     print("\nDocument Agent Created:")
     print(f"  doc_id     : {agent.doc_id}")

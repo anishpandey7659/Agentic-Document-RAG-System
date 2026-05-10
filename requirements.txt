@@ -12,5 +12,7 @@ uvicorn
 python-multipart
 pinecone_text
 cohere
+langchain-text-splitters
+scikit-learn
 
 # pip install -r requirements.txt

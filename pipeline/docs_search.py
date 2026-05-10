@@ -65,5 +65,3 @@ def build_context(matches: List[Dict]) -> str:
             f"[Chunk {i} | doc: {match['doc_id']} | Rank {match['rank']} | score: {match['score']}]\n{match['text']}"
         )
     return "\n\n---\n\n".join(parts)
-
-# print(f"Rank {m['rank']} (score={m['score']}) | {m['text']}")

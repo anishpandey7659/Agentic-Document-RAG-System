@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from services import _call_groq_with_retry
 from typing import List
 from config import summarize_llm
-from models import DocumentSummary
+from Model_Memory_store.models import DocumentSummary
 
 
 

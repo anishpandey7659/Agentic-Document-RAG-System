@@ -6,8 +6,7 @@ from config import PINECONE_API_KEY, PINECONE_CLOUD, PINECONE_REGION
 pc= Pinecone(api_key=PINECONE_API_KEY)
 
 
-def store_in_pinecone(doc_id: str, chunks: List[str], embeddings: List[List[float]]) -> str:
-    index_name = f"{doc_id.lower()}-index"
+def store_in_pinecone(doc_id: str, chunks: List[str], embeddings: List[List[float]],index_name:str,file_name:str,domain:str) -> str:
 
     existing_indexes = [idx["name"] for idx in pc.list_indexes()]
 
@@ -34,7 +33,9 @@ def store_in_pinecone(doc_id: str, chunks: List[str], embeddings: List[List[floa
                 "metadata": {
                     "text": chunk,
                     "doc_id": doc_id,
-                    "chunk_id": i
+                    "chunk_id": i,
+                    "source":file_name,
+                    "domain": domain,
                 }
             })
 
@@ -61,6 +62,8 @@ def search_index(index_name: str, hdense: List[float], hsparse: Dict, top_k: int
             "text":     match["metadata"]["text"],
             "doc_id":   match["metadata"]["doc_id"],
             "chunk_id": match["metadata"]["chunk_id"],
+            "domain": match["metadata"]["domain"],
+            "source": match["metadata"]["source"],
         })
 
     return matches

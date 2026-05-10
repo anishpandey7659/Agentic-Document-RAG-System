@@ -1,5 +1,6 @@
 import re
 from typing import List, Dict
+import uuid
 
 def clean_text(text: str) -> str:
     text = re.sub(r"\s+", " ", text)
@@ -25,4 +26,3 @@ def chunk_text(text: str, chunk_size: int = 100, overlap: int = 20) -> List[str]
             break
 
     return chunks
-

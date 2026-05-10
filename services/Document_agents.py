@@ -1,5 +1,5 @@
 from typing import List, Dict
-from models import DocumentAgent
+from Model_Memory_store.models import DocumentAgent
 from config import EMBED_MODEL, MEMORY_FILE
 import json
 from dataclasses import asdict
@@ -8,7 +8,7 @@ def create_document_agent(
     doc_id: str,
     summary_data: Dict,
     vector_db: str,
-    file_name: str          
+    file_name: str,        
 ) -> DocumentAgent:
     return DocumentAgent(
         doc_id=doc_id,
