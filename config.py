@@ -12,6 +12,11 @@ PINECONE_CLOUD   = "aws"
 PINECONE_REGION  = "us-east-1"
 
 
+#Data base 
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+
 EMBED_MODEL = "mistral-embed"   # 1024-dimensional vectors
 Tool_MODEL   = "openai/gpt-oss-120b"  
 CHAT_MODEL   = "llama-3.3-70b-versatile"

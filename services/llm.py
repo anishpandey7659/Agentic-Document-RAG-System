@@ -1,18 +1,29 @@
 from pipeline import retrieve_and_answer
 from services import list_available_documents
+from  Model_Memory_store.memory.memory_manager import memory,conv_id
 
 if __name__ == "__main__":
 
     # list_available_documents()
-
+    query="Explain me the recent news on Agentic Ai"
     full_answer = ""
-    for event in retrieve_and_answer(query="Explain me the recent news on Agentic Ai", stream=True):
+    for event in retrieve_and_answer(query=query, stream=True):
         if event["type"] == "sources":
             sources = event["sources"]  # render sources immediately
         elif event["type"] == "token":
             print(event["token"], end="", flush=True)  # print token as it arrives
             full_answer += event["token"]
     print("\nSources: ",sources)
+
+    memory.add_message(conv_id,
+        role="user",
+        content=query
+    )
+    memory.add_message(conv_id,
+        role="assistant",
+        content=full_answer,
+        metadata={"sources": sources}  # attach sources as metadata
+    )
 
 # run using python -m services.llm
 

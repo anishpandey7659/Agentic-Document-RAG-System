@@ -14,5 +14,6 @@ pinecone_text
 cohere
 langchain-text-splitters
 scikit-learn
+supabase
 
 # pip install -r requirements.txt

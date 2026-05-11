@@ -1,0 +1,53 @@
+from config import SUPABASE_KEY,SUPABASE_URL
+from supabase import create_client
+from datetime import datetime, timezone
+
+
+class MemoryLayer:
+    def __init__(self, supabase):
+        self.supabase = supabase
+    
+    def create_user(self,user_name:str, user_email:str):
+        response = self.supabase.table("USERS").insert({
+                "name": user_name,
+                "email": user_email
+            }).execute()
+        return response
+        
+    def get_user(self, user_id:str):
+        response = self.supabase.table("USERS").select("*").eq("id", user_id).execute()
+        return response.data
+
+    def create_conversation(self,user_id:str,title:str): 
+        response =self.supabase.table("CONVERSATIONS").insert({
+            "user_id":user_id, "title":title
+            }).execute() 
+        return response
+    
+    def add_message(self,conversation_id:str,role:str,content:str,metadata:dict=None):
+        response= self.supabase.table("MESSAGES").insert({
+            "conversation_id":conversation_id,"role":role,"content":content,"metadata":metadata
+        }).execute()
+        return response
+    
+    def get_message(self,conversation_id:str):
+        response = self.supabase.table("MESSAGES").select("*").eq("conversation_id", conversation_id).execute()
+        return response
+    
+    
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+memory= MemoryLayer(supabase)
+
+
+id="1cede12c-6dbf-4db2-a6f3-07472573c987"
+title="Alok in this line"
+conv_id="4cfaf3fb-4a3d-4d0d-9147-70da25ed485d"
+
+# print(memory.create_conversation(id,title))
+
+metadata={"sources":"Testing for supabase","confidence_score":0.98,'rank':1}
+# print(memory.add_message(conv_id,role="User",content="Hi how are you",metadata=metadata))
+print(memory.get_message(conv_id))
+
+# python -m Model_Memory_store.memory.memory_manager

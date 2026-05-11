@@ -13,7 +13,7 @@ def store_in_pinecone(doc_id: str, chunks: List[str], embeddings: List[List[floa
     if index_name not in existing_indexes:
         pc.create_index(
             name=index_name,
-            vector_type="dense",   # Required for hybrid
+            vector_type="dense",  
             dimension=1024,        
             metric="dotproduct",  # Required for hybrid — NOT cosine or euclidean
             spec=ServerlessSpec(
@@ -28,8 +28,8 @@ def store_in_pinecone(doc_id: str, chunks: List[str], embeddings: List[List[floa
     for i, (chunk, emb) in enumerate(zip(chunks, embeddings)):
             vectors.append({
                 "id": f"{doc_id}_chunk_{i}",
-                "values": emb["dense"],           # ← dense vector
-                "sparse_values": emb["sparse"],   # ← sparse vector (new)
+                "values": emb["dense"],          
+                "sparse_values": emb["sparse"],   
                 "metadata": {
                     "text": chunk,
                     "doc_id": doc_id,
