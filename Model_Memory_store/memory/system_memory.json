@@ -70,5 +70,23 @@
       "embed_model": "mistral-embed",
       "file_name": "agentic_ai.txt"
     }
+  },
+  "doc-383670ba": {
+    "doc_id": "doc-383670ba",
+    "summary": "The document introduces Python and Machine Learning, highlighting Python's simplicity and its use in Machine Learning applications like image recognition and recommendation systems due to its extensive libraries.",
+    "keywords": [
+      "Python",
+      "Machine Learning",
+      "Artificial Intelligence",
+      "Data Science",
+      "Automation"
+    ],
+    "vector_db": "agentic-rag",
+    "metadata": {
+      "type": "document_agent",
+      "status": "active",
+      "embed_model": "mistral-embed",
+      "file_name": "python_intro.txt"
+    }
   }
 }

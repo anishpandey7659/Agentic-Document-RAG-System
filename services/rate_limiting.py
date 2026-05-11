@@ -1,92 +1,97 @@
 import time
-from groq import Groq, RateLimitError, APIStatusError
-from config import GROQ_TPM_LIMIT, GROQ_TPM_BUFFER, TOKEN_WINDOW ,GROQ_API_KEY
 import re
-
-groq_client = Groq(api_key=GROQ_API_KEY)  
-
-_token_tracker = {
-    "tokens_used": 0,
-    "window_start": time.time()
-}
+from groq import Groq, RateLimitError
+from config import GROQ_TPM_LIMIT, GROQ_TPM_BUFFER, TOKEN_WINDOW, GROQ_API_KEY
 
 
-def _reset_token_window_if_needed():
-    """Reset token counter if 60s window has passed."""
-    now = time.time()
-    elapsed = now - _token_tracker["window_start"]
+class TokenBudget:
+    """Tracks and enforces TPM (tokens per minute) rate limits."""
 
-    if elapsed >= TOKEN_WINDOW:
-        print(f"[INFO] Token window reset. ({elapsed:.1f}s elapsed)")
-        _token_tracker["tokens_used"] = 0
-        _token_tracker["window_start"] = now
+    def __init__(self, tpm_limit: int, tpm_buffer: float, window: int):
+        self._limit        = tpm_limit * tpm_buffer
+        self._window       = window
+        self._tokens_used  = 0
+        self._window_start = time.time()
 
+    def _reset_if_needed(self) -> None:
+        elapsed = time.time() - self._window_start
+        if elapsed >= self._window:
+            print(f"[INFO] Token window reset. ({elapsed:.1f}s elapsed)")
+            self._tokens_used  = 0
+            self._window_start = time.time()
 
-def _wait_if_token_limit_near(tokens_about_to_use: int):
-    """
-    If adding the next call's tokens would exceed 85% of TPM limit,
-    sleep until the 60s window resets.
-    """
-    _reset_token_window_if_needed()
+    def wait_if_needed(self, estimated_tokens: int) -> None:
+        """Sleep until window resets if budget is nearly exhausted."""
+        self._reset_if_needed()
 
-    projected = _token_tracker["tokens_used"] + tokens_about_to_use
-    limit      = GROQ_TPM_LIMIT * GROQ_TPM_BUFFER
+        if self._tokens_used + estimated_tokens >= self._limit:
+            wait = max(0, self._window - (time.time() - self._window_start) + 2)
+            print(f"[RATE LIMIT] Budget near limit ({self._tokens_used:,} used). "
+                  f"Waiting {wait:.1f}s...")
+            time.sleep(wait)
+            self._tokens_used  = 0
+            self._window_start = time.time()
 
-    if projected >= limit:
-        elapsed   = time.time() - _token_tracker["window_start"]
-        wait_time = max(0, TOKEN_WINDOW - elapsed + 2)   # +2s buffer
-        print(f"[RATE LIMIT] Token budget near limit ({_token_tracker['tokens_used']:,} used). "
-              f"Waiting {wait_time:.1f}s for window reset...")
-        time.sleep(wait_time)
+    def record(self, tokens: int) -> None:
+        """Record actual tokens used after a successful call."""
+        self._tokens_used += tokens
+        print(f"[TOKEN] Used {tokens} | "
+              f"Window total: {self._tokens_used:,}/{self._limit:,.0f}")
 
-        # Reset after waiting
-        _token_tracker["tokens_used"] = 0
-        _token_tracker["window_start"] = time.time()
-
-
-def _call_groq_with_retry(messages, model, response_format=None, max_retries=5):
-    """
-    Groq call with:
-    - Proactive token tracking (pauses before hitting limit)
-    - Retry + exponential backoff as safety net
-    """
-    # Estimate tokens about to be used (rough: 1 token ≈ 4 chars)
-    estimated_tokens = sum(len(m["content"]) // 4 for m in messages)
-    _wait_if_token_limit_near(estimated_tokens)
-
-    delay = 5
-    for attempt in range(max_retries):
-        try:
-            kwargs = {"model": model, "messages": messages}
-            if response_format:
-                kwargs["response_format"] = response_format
-
-            response = groq_client.chat.completions.create(**kwargs)
-
-            # Track actual tokens used from response
-            actual_tokens = response.usage.total_tokens
-            _token_tracker["tokens_used"] += actual_tokens
-            print(f"[TOKEN] Used {actual_tokens} tokens this call | "
-                  f"Total this window: {_token_tracker['tokens_used']:,}/{GROQ_TPM_LIMIT:,}")
-
-            return response
-
-        except RateLimitError as e:
-            if attempt == max_retries - 1:
-                raise
-
-            wait_time = _parse_retry_after(str(e), fallback=delay)
-            print(f"[RATE LIMIT] Hit on attempt {attempt+1}. Waiting {wait_time}s...")
-            time.sleep(wait_time)
-
-            # Reset window after waiting
-            _token_tracker["tokens_used"] = 0
-            _token_tracker["window_start"] = time.time()
-            delay *= 2
+    def reset(self) -> None:
+        self._tokens_used  = 0
+        self._window_start = time.time()
 
 
-def _parse_retry_after(error_msg: str, fallback: int) -> int:
-    match = re.search(r"(?:try again in|retry after)\s*([\d.]+)", error_msg, re.IGNORECASE)
-    if match:
-        return int(float(match.group(1))) + 1
-    return fallback
+class GroqClient:
+    """Groq LLM client with built-in rate limiting and retry logic."""
+
+    def __init__(
+        self,
+        api_key: str         = GROQ_API_KEY,
+        tpm_limit: int       = GROQ_TPM_LIMIT,
+        tpm_buffer: float    = GROQ_TPM_BUFFER,
+        token_window: int    = TOKEN_WINDOW,
+        max_retries: int     = 5
+    ):
+        self._client      = Groq(api_key=api_key)
+        self._budget      = TokenBudget(tpm_limit, tpm_buffer, token_window)
+        self._max_retries = max_retries
+
+    def complete(self, messages: list, model: str, response_format=None) -> object:
+        """
+        Call Groq chat completions with proactive rate limiting and
+        exponential backoff retry on RateLimitError.
+        """
+        estimated = sum(len(m["content"]) // 4 for m in messages)
+        self._budget.wait_if_needed(estimated)
+
+        delay = 5
+        for attempt in range(self._max_retries):
+            try:
+                kwargs = {"model": model, "messages": messages}
+                if response_format:
+                    kwargs["response_format"] = response_format
+
+                response = self._client.chat.completions.create(**kwargs)
+                self._budget.record(response.usage.total_tokens)
+                return response
+
+            except RateLimitError as e:
+                if attempt == self._max_retries - 1:
+                    raise
+
+                wait = self._parse_retry_after(str(e), fallback=delay)
+                print(f"[RATE LIMIT] Attempt {attempt + 1}. Waiting {wait}s...")
+                time.sleep(wait)
+                self._budget.reset()
+                delay *= 2
+
+    @staticmethod
+    def _parse_retry_after(error_msg: str, fallback: int) -> int:
+        match = re.search(
+            r"(?:try again in|retry after)\s*([\d.]+)",
+            error_msg,
+            re.IGNORECASE
+        )
+        return int(float(match.group(1))) + 1 if match else fallback

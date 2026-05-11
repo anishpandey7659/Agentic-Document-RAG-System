@@ -1,28 +1,28 @@
-import re
-from typing import List, Dict
-import uuid
+# pipeline/chunker.py
 
-def clean_text(text: str) -> str:
-    text = re.sub(r"\s+", " ", text)
-    text = re.sub(r"[^\w\s.,;:!?()-]", "", text)
-    return text.strip()
+from typing import List
 
-def chunk_text(text: str, chunk_size: int = 100, overlap: int = 20) -> List[str]:
-    words = text.split()
 
-    if not words:
-        return []
+class Chunker:
+    """Splits cleaned text into overlapping word-based chunks."""
 
-    chunks = []
-    start = 0
+    def __init__(self, chunk_size: int = 100, overlap: int = 20):
+        if overlap >= chunk_size:
+            raise ValueError("overlap must be less than chunk_size")
+        self._chunk_size = chunk_size
+        self._overlap    = overlap
 
-    while start < len(words):
-        end = start + chunk_size
-        chunk = " ".join(words[start:end])
-        chunks.append(chunk)
-        start += chunk_size - overlap
+    def chunk(self, text: str) -> List[str]:
+        words = text.split()
+        if not words:
+            return []
 
-        if chunk_size <= overlap:
-            break
+        chunks = []
+        start  = 0
 
-    return chunks
+        while start < len(words):
+            end = start + self._chunk_size
+            chunks.append(" ".join(words[start:end]))
+            start += self._chunk_size - self._overlap
+
+        return chunks
