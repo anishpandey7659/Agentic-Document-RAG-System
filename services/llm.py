@@ -1,28 +1,49 @@
-from pipeline import retrieve_and_answer
+from pipeline import retrieve_and_answer,answer_normal
 from services import list_available_documents
+from agents.Orchestration.router.router_agent import should_retrieve
 from  Model_Memory_store.memory.memory_manager import memory,conv_id
+
+
 
 if __name__ == "__main__":
 
-    # list_available_documents()
-    query="Explain me the recent news on Agentic Ai"
-    full_answer = ""
-    for event in retrieve_and_answer(query=query, stream=True):
-        if event["type"] == "sources":
-            sources = event["sources"]  # render sources immediately
-        elif event["type"] == "token":
-            print(event["token"], end="", flush=True)  # print token as it arrives
-            full_answer += event["token"]
-    print("\nSources: ",sources)
+    query = "What is the recent political news in nepal"
 
-    memory.add_message(conv_id,
+    is_retrieve = should_retrieve(query)
+    full_answer = ""
+    sources = None
+
+    memory.add_message(
+        conv_id,
         role="user",
         content=query
     )
-    memory.add_message(conv_id,
+    if not is_retrieve:
+        print("Answer:")
+        for token in answer_normal(query,stream=True):
+            print(token, end="", flush=True)
+            full_answer += token
+    else:
+        print("Answer:")
+
+        for event in retrieve_and_answer(query=query, stream=True):
+            if event["type"] == "sources":
+                sources = event["sources"]
+
+            elif event["type"] == "token":
+                print(event["token"], end="", flush=True)
+                full_answer += event["token"]
+
+    print("\n")
+
+    if sources:
+        print("Sources:", sources)
+
+    memory.add_message(
+        conv_id,
         role="assistant",
         content=full_answer,
-        metadata={"sources": sources}  # attach sources as metadata
+        metadata={"sources": sources} if sources else {}
     )
 
 # run using python -m services.llm

@@ -2,6 +2,7 @@ from pipeline import smart_search,build_context
 from .rerank import rerank_documents
 from typing import List, Dict
 from config import Tool_MODEL,GROQ_API_KEY,COHERE_API_KEY
+from  Model_Memory_store.memory.memory_manager import memory,conv_id
 from groq import Groq
 
 groq_client = Groq(api_key=GROQ_API_KEY)
@@ -21,6 +22,7 @@ User Question: {query}
 
 Answer:
 """
+
     response = groq_client.chat.completions.create(
         model=Tool_MODEL,
         messages=[
@@ -80,3 +82,28 @@ def retrieve_and_answer(
     else:
         answer = answer_query(query, context)
         return {"answer": answer, "sources": reranked_matches}
+    
+
+def answer_normal(query: str, stream: bool = False):
+    response = groq_client.chat.completions.create(
+        model=Tool_MODEL,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant. Give accurate answers."},
+            {"role": "user", "content": query}
+        ],
+        stream=True,
+    )
+    full_response = ""
+    if stream:
+        for chunk in response:
+            delta = chunk.choices[0].delta.content
+            if delta:
+                full_response += delta
+                yield delta
+    else:
+        for chunk in response:
+            delta = chunk.choices[0].delta.content
+            if delta:
+                full_response += delta
+
+        return full_response.strip()

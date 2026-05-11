@@ -30,9 +30,17 @@ class MemoryLayer:
         }).execute()
         return response
     
-    def get_message(self,conversation_id:str):
-        response = self.supabase.table("MESSAGES").select("*").eq("conversation_id", conversation_id).execute()
-        return response
+    def get_recent_messages(self, conversation_id: str, k: int):
+        response = (
+            self.supabase.table("MESSAGES")
+            .select("*")
+            .eq("conversation_id", conversation_id)
+            .order("created_at", desc=True)  # newest first
+            .limit(k)                         # take top k
+            .execute()
+        )
+        # reverse to restore chronological order for context
+        return list(reversed(response.data)) if response.data else []
     
     
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -48,6 +56,24 @@ conv_id="4cfaf3fb-4a3d-4d0d-9147-70da25ed485d"
 
 metadata={"sources":"Testing for supabase","confidence_score":0.98,'rank':1}
 # print(memory.add_message(conv_id,role="User",content="Hi how are you",metadata=metadata))
-print(memory.get_message(conv_id))
+history=memory.get_recent_messages(conv_id,2)
+memory_context = "\n".join(
+    f"{msg['role'].capitalize()}: {msg['content'][:200]}..."  # limit length
+    for msg in history
+) if history else None
 
+context="document context"
+query="what do we learn"
+prompt = f"""
+You are a helpful assistant. Answer the user's question using the document context below as your primary source. You may also use any relevant previous conversation memory provided. If neither the context nor the memory contains enough information, say "I don't know" clearly.
+--- DOCUMENT CONTEXT ---
+{context}
+--- END DOCUMENT CONTEXT ---
+--- PREVIOUS MEMORY ---
+{memory_context if memory_context else "No previous memory available."}
+--- END PREVIOUS MEMORY ---
+User Question: {query}
+Answer:
+    """
+# print(prompt)
 # python -m Model_Memory_store.memory.memory_manager

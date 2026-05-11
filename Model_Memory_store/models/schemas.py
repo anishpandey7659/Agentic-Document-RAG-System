@@ -1,5 +1,5 @@
 from typing import List, Dict
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from dataclasses import dataclass, asdict
 
 
@@ -19,3 +19,10 @@ class DocumentSummary(BaseModel):
 
 class RouteDecision(BaseModel):
     doc_ids: List[str]
+
+
+class RouteLLM(BaseModel):
+    retrieve: bool = Field(
+        default=False,
+        description="Whether to retrieve documents from the vector database or not."
+    )
