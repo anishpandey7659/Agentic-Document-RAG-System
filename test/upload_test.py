@@ -1,32 +1,32 @@
 from services.GroqClient import groq_client
-from services.pinecone_client               import PineconeClient, PineconeVectorStore
+from services.pinecone_client import PineconeClient, PineconeVectorStore
 from services.embedding.pinecone_embedder  import PineconeEmbedder
 from services.embedding.embedding_store    import EmbeddingStore
-from services.Document_agents                import DocumentAgentFactory, AgentMemoryStore
+from services.Document_agents import DocumentAgentFactory, AgentMemoryStore
 from agents.Orchestration.router.Document_Router import  DocumentRouter
 from agents.Orchestration.router.Retriver_Router import RetrievalRouter 
-from pipeline.extractor                     import Extractor
-from pipeline.chunker                       import Chunker
-from pipeline.summarizer                    import Summarizer
-from pipeline.upload                        import UploadPipeline
-from pipeline.smart_search                  import SmartSearch
-from pipeline.rerank                        import Reranker
-from pipeline.retriever                     import Retriever
-from config                                 import INDEX_NAME
+from pipeline.extractor import Extractor
+from pipeline.chunker import Chunker
+from pipeline.summarizer import Summarizer
+from pipeline.upload import UploadPipeline
+from pipeline.smart_search import SmartSearch
+from pipeline.rerank import Reranker
+from pipeline.retriever import Retriever
+from config import INDEX_NAME
 
 
-# ── Clients ──────────────────────────────────────────────────
+# Clients 
 
 pinecone_client = PineconeClient()
 
-# ── Services ─────────────────────────────────────────────────
+# Services 
 embedder = PineconeEmbedder(client=pinecone_client.client) 
 embedding_store = EmbeddingStore()
 vector_store    = PineconeVectorStore(pinecone_client)
 agent_factory   = DocumentAgentFactory()
 memory_store    = AgentMemoryStore()
 
-# ── Pipeline ─────────────────────────────────────────────────
+# Pipeline 
 extractor  = Extractor()
 chunker    = Chunker()
 summarizer = Summarizer(groq_client=groq_client)
@@ -42,14 +42,14 @@ upload_pipeline = UploadPipeline(
     memory_store    = memory_store,
 )
 
-# ── Retrieval ─────────────────────────────────────────────────
+
 retrieval_router = RetrievalRouter(groq_client=groq_client)
 document_router  = DocumentRouter(groq_client=groq_client, embedding_store=embedding_store, embedder=embedder)
 smart_search     = SmartSearch(embedder, vector_store, document_router, memory_store)
 reranker         = Reranker()
 retriever        = Retriever(groq_client=groq_client, smart_search=smart_search, reranker=reranker)
 
-# ── Run ───────────────────────────────────────────────────────
+
 if __name__ == "__main__":
     agent = upload_pipeline.run(
         file_path  = "/home/anish/Documents/Agentic-RAG/data/text_files/python_intro.txt",

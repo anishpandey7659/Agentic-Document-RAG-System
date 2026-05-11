@@ -36,8 +36,8 @@ class AgentMemoryStore:
     def __init__(self, memory_file: str = MEMORY_FILE):
         self._path = memory_file
 
-    # ── private ────────────────────────────────────────────────
 
+    # private
     def _load(self) -> Dict:
         try:
             with open(self._path, "r") as f:
@@ -49,8 +49,7 @@ class AgentMemoryStore:
         with open(self._path, "w") as f:
             json.dump(memory, f, indent=2)
 
-    # ── public ─────────────────────────────────────────────────
-
+    # Public
     def register(self, agent: DocumentAgent) -> None:
         memory = self._load()
         memory[agent.doc_id] = asdict(agent)

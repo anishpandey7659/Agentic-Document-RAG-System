@@ -43,7 +43,7 @@ class PineconeVectorStore:
         self,
         doc_id: str,
         chunks: List[str],
-        embeddings: List[Dict],   # each dict has 'dense' and 'sparse'
+        embeddings: List[Dict],   
         index_name: str,
         file_name: str,
         domain: str

@@ -9,6 +9,8 @@ from pipeline.retriever import Retriever
 from pipeline.smart_search import SmartSearch
 from pipeline.rerank import Reranker
 from config import MEMORY_FILE
+from agents.rag_agent import RAGAgent
+from Model_Memory_store.memory.memory_manager import memory
 
 
 store   = EmbeddingStore()
@@ -24,28 +26,11 @@ search=SmartSearch(embedder,vectorstore,document_router,memory_store)
 rerank=Reranker()
 retrive=Retriever(groq_client,search,rerank)
 
-query="what are the recent new on Agentic Ai"
+query="Hi how are you"
 
-# Usage
-full_answer = ""
-sources = None
-if retrieval_router.should_retrieve(query):
-        print("Answer:")
-        for event in retrive.retrieve_and_answer(query=query, stream=True):
-            if event["type"] == "sources":
-                sources = event["sources"]
+conv_id="4cfaf3fb-4a3d-4d0d-9147-70da25ed485d"
+rag=RAGAgent(retrive,retrieval_router,memory_store,memory,conv_id)
+print(rag.run(query))
 
-            elif event["type"] == "token":
-                print(event["token"], end="", flush=True)
-                full_answer += event["token"]
-else:
-    print("Answer:")
-    for token in retrive.answer_normal(query,stream=True):
-        print(token, end="", flush=True)
-        full_answer += token
-    print() 
-    
-if sources:
-    print("Sources:", sources)
 
 # python -m test.retrive_test

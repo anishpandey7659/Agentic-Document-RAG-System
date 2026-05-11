@@ -89,7 +89,7 @@ Answer:"""
         response = groq_client.chat.completions.create(
             model=Tool_MODEL,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT_RAG},
+                {"role": "system", "content": SYSTEM_PROMPT_NORMAL},
                 {"role": "user", "content": query}
             ],
             stream=stream,

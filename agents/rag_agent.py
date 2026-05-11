@@ -2,8 +2,8 @@
 
 from pipeline.retriever    import Retriever
 from pipeline.smart_search import SmartSearch
-from services.router       import RetrievalRouter
-from services.document_agent import AgentMemoryStore
+from agents.Orchestration.router.Retriver_Router import RetrievalRouter
+from services.Document_agents import AgentMemoryStore
 
 
 class RAGAgent:
@@ -43,14 +43,14 @@ class RAGAgent:
         # 3a. Direct LLM answer
         if not needs_retrieval:
             print("\n[MODE] General answer\nAnswer:")
-            for token in self._retriever.answer_normal(query, stream=True):
+            for token in self._retriever.answer_normal(query, stream=stream):
                 print(token, end="", flush=True)
                 full_answer += token
 
         # 3b. RAG pipeline
         else:
             print("\n[MODE] RAG retrieval\nAnswer:")
-            for event in self._retriever.retrieve_and_answer(query=query, stream=True):
+            for event in self._retriever.retrieve_and_answer(query=query, stream=stream):
                 if event["type"] == "sources":
                     sources = event["sources"]
                 elif event["type"] == "token":
