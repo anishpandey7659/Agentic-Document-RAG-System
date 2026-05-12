@@ -1,153 +1,48 @@
-# 🤖 Agentic Document RAG System
+# 🤖 Agentic-RAG
 
-A production-ready **Retrieval-Augmented Generation (RAG)** pipeline that lets you upload documents and ask questions against them. Unlike basic RAG systems that blindly search all documents, this system uses an **LLM-powered router** that reads document summaries and keywords to intelligently decide which documents are relevant before searching — saving cost and improving accuracy.
+A production-grade **Agentic Retrieval-Augmented Generation (RAG)** system that intelligently routes queries, retrieves relevant documents, reranks results, and generates accurate answers — built with a clean, fully class-based architecture.
+
+---
+
+## ✨ Features
+
+- 🔍 **Hybrid Search** — combines dense + sparse embeddings for superior retrieval
+- 🧠 **Agentic Routing** — LLM decides whether to retrieve or answer directly
+- 📄 **Document Routing** — embedding similarity + LLM picks the most relevant documents
+- 🏆 **Reranking** — Cohere reranker refines results before generation
+- 🗂️ **Conversation Memory** — Supabase-backed conversation + document agent memory
+- 📚 **Multi-format Ingestion** — supports PDF, DOCX, and TXT
+- ⚡ **Streaming Support** — token-by-token streaming for real-time responses
+- 🛡️ **Rate Limiting** — proactive TPM tracking with exponential backoff retry
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-                        UPLOAD PIPELINE
-                        ───────────────
-  PDF / DOCX / TXT
-        │
-        ├──── Extract text           (pipeline/extract.py)
-        │
-        ├──── Clean + normalize
-        │
-        ├──── ┌─────────────────────────────────┐
-        │     │  Two separate chunking paths    │  (pipeline/chunker.py)
-        │     │                                 │
-        │     │  Vector DB chunks (400 words)   │──→ Mistral Embed ──→ Pinecone
-        │     │  Summary chunks  (12,000 chars) │──→ Groq LLM      ──→ summary + keywords
-        │     └─────────────────────────────────┘       (pipeline/summarize_chunks.py)
-        │
-        └──── Register agent → memory/system_memory.json
-                                    (memory/memory_manager.py)
-
-
-                        RETRIEVAL PIPELINE
-                        ──────────────────
-  User Query
-        │
-        ├──── LLM Router reads system_memory.json      (services/router.py)
-        │     (summaries + keywords of all docs)
-        │     → decides which doc_ids are relevant
-        │
-        ├──── Embed query with Mistral                 (services/embedder.py)
-        │
-        ├──── Search ONLY relevant Pinecone indexes    (services/pinecone_client.py)
-        │                                              (pipeline/docs_search.py)
-        ├──── Build context from top-K chunks
-        │
-        └──── Groq LLM answers from context            (services/llm.py)
-```
-
----
-
-## ✨ Features
-
-- **Agentic routing** — LLM reads document summaries and keywords to pick only relevant documents before searching, instead of brute-forcing all indexes
-- **Mistral embeddings** — uses `mistral-embed` (1024-d vectors) for both document chunks and query embedding
-- **Smart summarization** — map-reduce approach handles documents of any size; splits into chunks, summarizes each, merges results
-- **Structured outputs** — Pydantic schemas enforce LLM response format, no fragile regex parsing
-- **Rate limit handling** — proactive token tracking + exponential backoff retry for Groq free tier
-- **Persistent memory** — `memory/system_memory.json` stores agent metadata so documents survive process restarts
-- **Multi-format support** — PDF, DOCX, and TXT documents
-
----
-
-## 🛠️ Tech Stack
-
-| Component | Technology |
-|---|---|
-| LLM (chat + routing) | [Groq](https://groq.com) — `llama-3.3-70b-versatile` |
-| LLM (chunk summaries) | [Groq](https://groq.com) — `llama-3.1-8b-instant` |
-| Embeddings | [Mistral AI](https://mistral.ai) — `mistral-embed` |
-| Vector DB | [Pinecone](https://pinecone.io) |
-| Validation | [Pydantic](https://docs.pydantic.dev) |
-| PDF parsing | PyPDF2 |
-| DOCX parsing | python-docx |
-
----
-
-## 📦 Installation
-
-```bash
-git clone https://github.com/anishpandey7659/Agentic-Document-RAG-System.git
-cd Agentic-Document-RAG-System
-
-pip install -r requirements.txt
-```
-
-### requirements.txt
-
-```
-mistralai
-PyPDF2
-python-docx
-langchain
-langgraph
-python-dotenv
-pydantic
-pinecone
-groq
-```
-
----
-
-## 🔑 Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-GROQ_API_KEY=your_groq_api_key
-MISTRAL_API_KEY=your_mistral_api_key
-PINECONE_API_KEY=your_pinecone_api_key
-```
-
-Or export them directly:
-
-```bash
-export GROQ_API_KEY="your_groq_api_key"
-export MISTRAL_API_KEY="your_mistral_api_key"
-export PINECONE_API_KEY="your_pinecone_api_key"
-```
-
----
-
-## 🚀 Usage
-
-### 1. Upload a document
-
-```python
-from pipeline.upload import upload_document_pipeline
-
-agent = upload_document_pipeline("research_paper.pdf")
-
-print(agent.doc_id)          # doc_a1b2c3d4
-print(agent.summary)         # "This paper introduces..."
-print(agent.keywords)        # ["attention", "transformer", ...]
-```
-
-### 2. Ask a question
-
-```python
-from pipeline.retrieval import retrieve_and_answer
-
-answer = retrieve_and_answer(
-    query="What is the attention mechanism?",
-    top_k=5,
-    show_chunks=True    # set False to hide raw retrieved chunks
-)
-
-print(answer)
-```
-
-### 3. Run via CLI
-
-```bash
-python main.py
+User Query
+    │
+    ▼
+agents/Orchestration/router/Retriver_Router.py   ← Should we retrieve at all?
+    │
+    ├── NO  → api/answer_llm.py                  (direct LLM answer)
+    │
+    └── YES → agents/Orchestration/router/Document_Router.py
+                  │
+                  ├── Stage 1: Embedding similarity  (narrow candidates)
+                  └── Stage 2: LLM routing           (pick best doc_ids)
+                              │
+                              ▼
+                       pipeline/smart_search.py
+                              │
+                              ├── embed_both()  [dense + sparse]
+                              └── PineconeVectorStore.search()
+                                          │
+                                          ▼
+                                 pipeline/rerank.py  (Cohere)
+                                          │
+                                          ▼
+                                pipeline/retriever.py → Final Answer
 ```
 
 ---
@@ -157,89 +52,291 @@ python main.py
 ```
 AGENTIC-RAG/
 │
-├── api/                            # API layer (if applicable)
-│
-├── data/                           # Sample documents for testing
-│   ├── docx/
-│   ├── pdf/
-│   └── text_files/
-│
-├── memory/                         # Persistent agent registry
-│   ├── memory_manager.py           # Read/write agent metadata
-│   └── system_memory.json          # Auto-generated — stores all doc agents
-│
-├── models/                         # Pydantic schemas & data models
+├── agents/
 │   ├── __init__.py
-│   └── schemas.py                  # Structured output schemas for LLM responses
+│   ├── rag_agent.py                          # Top-level orchestrator
+│   ├── External access/                      # External API access layer
+│   ├── Orchestration/
+│   │   ├── critic/                           # Self-critique / reflection
+│   │   ├── planner/                          # Query planning
+│   │   ├── router/
+│   │   │   ├── Document_Router.py            # Two-stage doc routing (embedding + LLM)
+│   │   │   ├── intent_classifier.py          # Classifies query intent
+│   │   │   └── Retriver_Router.py            # Decides retrieve vs direct answer
+│   │   └── Reasoning & retrieval/            # Reasoning + retrieval fusion
+│   └── State/                                # Agent state management
 │
-├── pipeline/                       # Core document processing steps
+├── api/
 │   ├── __init__.py
-│   ├── chunker.py                  # Split documents into vector + summary chunks
-│   ├── docs_search.py              # Search Pinecone for relevant chunks
-│   ├── extract.py                  # Extract text from PDF / DOCX / TXT
-│   ├── retrieval.py                # End-to-end retrieval + answer pipeline
-│   ├── summarize_chunks.py         # Map-reduce summarization for large docs
-│   └── upload.py                   # End-to-end upload + indexing pipeline
+│   ├── answer_llm.py                         # Direct LLM answer endpoint
+│   └── upload_file.py                        # Document upload endpoint
 │
-├── services/                       # External service clients
+├── data/                                     # Raw + processed documents
+│
+├── Model_Memory_store/
+│   ├── memory/
+│   │   ├── doc_embeddings.pkl                # Cached document-level embeddings
+│   │   ├── memory_manager.py                 # Supabase memory layer (MemoryLayer class)
+│   │   └── system_memory.json                # Registered document agents
+│   └── models/
+│       └── __init__.py                       # Pydantic schemas (DocumentAgent, DocumentSummary, RouteDecision ...)
+│
+├── pipeline/
 │   ├── __init__.py
-│   ├── Document_agents.py          # Agent dataclass and registry logic
-│   ├── embedder.py                 # Mistral embedding calls
-│   ├── llm.py                      # Groq LLM calls (chat + summarization)
-│   ├── pinecone_client.py          # Pinecone index management + upsert/query
-│   ├── rate_limiting.py            # Token tracking + retry/backoff logic
-│   └── router.py                   # LLM-powered document relevance router
+│   ├── chunker.py                            # Word-based overlapping chunker
+│   ├── extractor.py                          # Extract + clean text (PDF/DOCX/TXT)
+│   ├── rerank.py                             # Cohere reranker
+│   ├── retriever.py                          # Orchestrates search → rerank → answer
+│   ├── smart_search.py                       # Hybrid search across selected indexes
+│   ├── summarizer.py                         # Chunk summarization + keyword extraction
+│   └── upload.py                             # Full document ingestion pipeline
 │
+├── services/
+│   ├── __init__.py
+│   ├── embedding/
+│   │   ├── embedding_service.py              # Unified embedding facade
+│   │   ├── embedding_store.py                # Pickle-based embedding persistence
+│   │   ├── mistral_embedder.py               # Mistral text embeddings
+│   │   └── pinecone_embedder.py              # Pinecone dense + sparse embeddings
+│   ├── Document_agents.py                    # DocumentAgentFactory + AgentMemoryStore
+│   ├── GroqClient.py                         # GroqClient with rate limiting + retry
+│   ├── llm.py                                # LLM call helpers
+│   ├── mistralai_client.py                   # Mistral client singleton
+│   ├── pinecone_client.py                    # PineconeClient + PineconeVectorStore
+│   └── rate_limiting.py                      # TokenBudget
+│
+├── test/
+│   ├── __init__.py
+│   ├── retrive_test.py
+│   └── upload_test.py
+│
+├── .env                                      # API keys (never commit)
 ├── .gitignore
-├── config.py                       # Centralized config (model names, chunk sizes, etc.)
-├── main.py                         # Entry point
-├── README.md
-└── requirements.txt
+├── config.py                                 # Loads .env, exports all constants
+├── main.py                                   # Wires all dependencies + entry point
+├── requirements.txt
+└── README.md
 ```
 
 ---
 
-## 🔄 How the Agent Router Works
+## ⚙️ Tech Stack
 
-Instead of searching every Pinecone index on every query (expensive and slow), the router (`services/router.py`) asks the LLM:
+| Layer | Technology |
+|---|---|
+| LLM | [Groq](https://groq.com) (LLaMA 3) |
+| Embeddings | [Mistral](https://mistral.ai) + [Pinecone Inference](https://docs.pinecone.io) |
+| Vector DB | [Pinecone](https://pinecone.io) (hybrid dense + sparse) |
+| Reranking | [Cohere](https://cohere.com) rerank-v4.0-pro |
+| Memory | [Supabase](https://supabase.com) (PostgreSQL) |
+| Orchestration | Custom agentic routing (class-based) |
+| File Parsing | PyPDF2, python-docx |
 
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/your-username/agentic-rag.git
+cd agentic-rag
 ```
-"Here are all my documents with their summaries and keywords.
- Which ones are likely to answer this question?"
+
+### 2. Create and activate virtual environment
+
+```bash
+python -m venv venv
+source venv/bin/activate        # Linux/Mac
+venv\Scripts\activate           # Windows
 ```
 
-The LLM returns only the relevant `doc_ids`. Only those Pinecone indexes are searched.
+### 3. Install dependencies
 
+```bash
+pip install -r requirements.txt
 ```
-10 documents uploaded
-User asks: "What is multi-head attention?"
 
-Router reads all 10 summaries + keywords  ← services/router.py
-→ LLM selects: ["doc-a1b2c3d4"]           (only the transformer paper)
-→ Search 1 index instead of 10            ← 90% fewer Pinecone calls
+### 4. Set up environment variables
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your keys:
+
+```env
+# Groq
+GROQ_API_KEY=your_groq_api_key
+GROQ_TPM_LIMIT=6000
+GROQ_TPM_BUFFER=0.85
+TOKEN_WINDOW=60
+
+# Mistral
+MISTRAL_API_KEY=your_mistral_api_key
+EMBED_MODEL=mistral-embed
+
+# Pinecone
+PINECONE_API_KEY=your_pinecone_api_key
+PINECONE_CLOUD=aws
+PINECONE_REGION=us-east-1
+INDEX_NAME=your_index_name
+
+# Cohere
+COHERE_API_KEY=your_cohere_api_key
+
+# Supabase
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_key
+
+# App
+MEMORY_FILE=Model_Memory_store/memory/system_memory.json
+EMBEDDING_FILE=Model_Memory_store/memory/doc_embeddings.pkl
+Tool_MODEL=llama3-8b-8192
+summarize_llm=llama3-8b-8192
+```
+
+### 5. Set up Supabase tables
+
+Run this SQL in your Supabase dashboard:
+
+```sql
+CREATE TABLE USERS (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE CONVERSATIONS (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES USERS(id),
+    title TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE MESSAGES (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    conversation_id UUID REFERENCES CONVERSATIONS(id),
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
 ```
 
 ---
 
-## ⚠️ Groq Rate Limits
+## 📖 Usage
 
-Groq free tier has token-per-minute (TPM) limits. The pipeline handles this automatically in `services/rate_limiting.py` with:
+### Upload a document
 
-- **Proactive token tracking** — monitors tokens used per 60s window
-- **Auto-pause** — waits for window reset before hitting the limit
-- **Retry with backoff** — catches any rate limit errors and retries
+```python
+from main import upload_pipeline
 
-You'll see clear logs instead of silent hangs:
+agent = upload_pipeline.run(
+    file_path  = "data/my_document.pdf",
+    index_name = "my-index",
+    domain     = "Finance"
+)
 
+print(f"doc_id  : {agent.doc_id}")
+print(f"summary : {agent.summary}")
+print(f"keywords: {agent.keywords}")
 ```
-[TOKEN] Used 2,847 tokens | Total this window: 2,847/131,072
-[TOKEN] Used 3,012 tokens | Total this window: 5,859/131,072
-[RATE LIMIT] Token budget near limit. Waiting 34.2s for window reset...
-[INFO] Resuming after reset.
+
+### Query the system
+
+```python
+from main import rag_agent
+
+# Streaming
+result = rag_agent.run("What does the document say about risk?", stream=True)
+
+# Non-streaming
+result = rag_agent.run("Summarize the key findings.", stream=False)
+print(result["answer"])
+print(result["sources"])
 ```
+
+---
+
+## 🔄 Full Pipeline Flow
+
+### Ingestion
+```
+File (PDF / DOCX / TXT)
+    → Extractor.extract() + clean()
+    → Chunker.chunk()
+    → PineconeEmbedder.embed_both()          ← dense + sparse per chunk
+    → PineconeVectorStore.store()             ← upsert to Pinecone index
+    → Summarizer.summarize()                  ← chunk → merge → keywords
+    → PineconeEmbedder.embed_dense()          ← document-level embedding
+    → EmbeddingStore.save()                   ← cached to doc_embeddings.pkl
+    → DocumentAgentFactory.create()
+    → AgentMemoryStore.register()             ← saved to system_memory.json
+```
+
+### Retrieval
+```
+Query
+    → Retriver_Router.should_retrieve()       ← retrieve or answer directly?
+    → Document_Router.route()
+         ├── _get_candidates()                ← cosine similarity on doc embeddings
+         └── LLM routing prompt               ← picks best doc_ids
+    → SmartSearch.search()
+         ├── embed_both(query)                ← hybrid query embedding
+         └── PineconeVectorStore.search()     ← per selected Pinecone index
+    → Reranker.rerank()                       ← Cohere rerank-v4.0-pro
+    → SmartSearch.build_context()
+    → GroqClient.complete_text()              ← final answer generation
+```
+
+---
+
+## 🧩 Key Design Principles
+
+### 1. Single Responsibility
+Every class has one job. `Reranker` only reranks. `Chunker` only chunks. `MemoryLayer` only talks to Supabase.
+
+### 2. Dependency Injection
+No hidden globals. Every class receives its dependencies through the constructor:
+
+```python
+retriever = Retriever(
+    groq_client  = groq,
+    smart_search = smart_search,
+    reranker     = reranker,
+)
+```
+
+### 3. One Wiring Point
+`main.py` is the only place that knows how everything connects. Swap Cohere for another reranker? Change one line in `main.py`.
+
+### 4. Layered Architecture
+
+| Layer | Folder | Responsibility |
+|---|---|---|
+| Agent | `agents/` | Decisions + orchestration |
+| Pipeline | `pipeline/` | Data flow (ingest, search, rank, answer) |
+| Services | `services/` | External API clients (Groq, Pinecone, Mistral, Cohere) |
+| API | `api/` | HTTP request handling |
+| Memory | `Model_Memory_store/` | Conversation + document persistence |
+
+### 5. No yield + return Mix
+Streaming and non-streaming are always separate code paths — delegated down to `GroqClient.stream_tokens()` and `GroqClient.complete_text()` so the outer methods stay clean.
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repo
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Follow the class-based architecture — no loose functions in `pipeline/` or `services/`
+4. Open a pull request
 
 ---
 
 ## 📄 License
 
-MIT License — free to use, modify, and distribute.
+MIT License — see [LICENSE](LICENSE) for details.
