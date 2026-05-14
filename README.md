@@ -55,15 +55,10 @@ AGENTIC-RAG/
 ├── agents/
 │   ├── __init__.py
 │   ├── rag_agent.py                          # Top-level orchestrator
-│   ├── External access/                      # External API access layer
 │   ├── Orchestration/
-│   │   ├── critic/                           # Self-critique / reflection
-│   │   ├── planner/                          # Query planning
 │   │   ├── router/
 │   │   │   ├── Document_Router.py            # Two-stage doc routing (embedding + LLM)
-│   │   │   ├── intent_classifier.py          # Classifies query intent
 │   │   │   └── Retriver_Router.py            # Decides retrieve vs direct answer
-│   │   └── Reasoning & retrieval/            # Reasoning + retrieval fusion
 │   └── State/                                # Agent state management
 │
 ├── api/
