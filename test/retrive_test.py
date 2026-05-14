@@ -25,12 +25,36 @@ document_router  = DocumentRouter(groq_client=groq_client, embedding_store=store
 search=SmartSearch(embedder,vectorstore,document_router,memory_store)
 rerank=Reranker()
 retrive=Retriever(groq_client,search,rerank)
-
-query="Hi how are you"
-
 conv_id="4cfaf3fb-4a3d-4d0d-9147-70da25ed485d"
-rag=RAGAgent(retrive,retrieval_router,memory_store,memory,conv_id)
-print(rag.run(query))
+rag = RAGAgent(
+        retrive,
+        retrieval_router,
+        memory_store,
+        memory,
+        conv_id
+    )
+
+if __name__ == "__main__":
+    query = "What is AIRA 2 explain in detail"
+
+    conv_id="4cfaf3fb-4a3d-4d0d-9147-70da25ed485d"
+
+    rag = RAGAgent(
+        retrive,
+        retrieval_router,
+        memory_store,
+        memory,
+        conv_id
+    )
+
+    print(rag.run(query))
 
 
 # python -m test.retrive_test
+
+
+
+
+
+
+

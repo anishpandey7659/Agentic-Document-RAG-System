@@ -3,15 +3,17 @@ import shutil
 import logging
 from pathlib import Path
 from fastapi.responses import JSONResponse
-from pipeline import upload_document_pipeline
-from config import PINECONE_API_KEY
-from pinecone import Pinecone
+from test.upload_test import upload_pipeline,INDEX_NAME
+from config import PINECONE_API_KEY,MEMORY_FILE
 from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks
-from services import load_system_memory,delete_document_agent
+from services import AgentMemoryStore,EmbeddingStore,PineconeClient
 
+memory_agent=AgentMemoryStore(memory_file=MEMORY_FILE)
+emb_store=EmbeddingStore()
 
-pc = Pinecone(api_key=PINECONE_API_KEY)
-logging.basicConfig(level=logging.INFO)
+pc = PineconeClient()
+
+logging.basicConfig(level=logging.INFO,format="[%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -39,21 +41,27 @@ def get_save_path(filename: str) -> Path:
     return dest_dir / filename
 
 
-def ingest_to_pinecone(file_path: str, filename: str):
+def ingest_to_pinecone(file_path: str, filename: str, domain: str):
     """
-    Background task: called after the HTTP response is already sent.
-    Runs your existing pipeline to embed + store in Pinecone.
+        Background task: called after the HTTP response is already sent.
+        Run
     """
     try:
         logger.info(f"[Pinecone] Starting ingestion for: {filename}")
-        upload_document_pipeline(file_path)          # ← your existing function
+        upload_pipeline.run(file_path, index_name=INDEX_NAME, domain=domain)
         logger.info(f"[Pinecone] Successfully ingested: {filename}")
+
     except Exception as e:
-        logger.error(f"[Pinecone] Ingestion failed for {filename}: {e}")
+        logger.error(f"[Pinecone] Ingestion failed for {filename}: {e}", exc_info=True)
+        try:
+            Path(file_path).unlink(missing_ok=True)
+            logger.info(f"[Pinecone] Cleaned up file: {filename}")
+        except Exception as cleanup_error:
+            logger.error(f"[Pinecone] Cleanup failed for {filename}: {cleanup_error}")
 
 
 @router.post("/upload", summary="Upload a single file + ingest to Pinecone")
-async def upload_file(file: UploadFile, background_tasks: BackgroundTasks):
+async def upload_file(file: UploadFile, background_tasks: BackgroundTasks,domain:str):
     save_path = get_save_path(file.filename)
 
     if save_path.exists():
@@ -69,7 +77,7 @@ async def upload_file(file: UploadFile, background_tasks: BackgroundTasks):
         await file.close()
 
     # ✅ Fires AFTER response is sent — user doesn't wait for Pinecone
-    background_tasks.add_task(ingest_to_pinecone, str(save_path), file.filename)
+    background_tasks.add_task(ingest_to_pinecone, str(save_path), file.filename,domain)
 
     return JSONResponse(
         status_code=201,
@@ -82,7 +90,7 @@ async def upload_file(file: UploadFile, background_tasks: BackgroundTasks):
 
 
 @router.post("/upload/multiple", summary="Upload multiple files + ingest to Pinecone")
-async def upload_multiple_files(files: list[UploadFile], background_tasks: BackgroundTasks):
+async def upload_multiple_files(files: list[UploadFile], background_tasks: BackgroundTasks,domain:list[str]):
     results = []
     for file in files:
         try:
@@ -94,7 +102,7 @@ async def upload_multiple_files(files: list[UploadFile], background_tasks: Backg
                 shutil.copyfileobj(file.file, buffer)
 
             # ✅ One background task queued per file
-            background_tasks.add_task(ingest_to_pinecone, str(save_path), file.filename)
+            background_tasks.add_task(ingest_to_pinecone, str(save_path), file.filename,domain)
 
             results.append({
                 "filename": file.filename,
@@ -126,33 +134,39 @@ def list_files():
 def delete_file(filename: str):
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     folder = EXT_FOLDER_MAP.get(ext)
+
     if folder is None:
-        raise HTTPException(status_code=400, detail=f"Unsupported file type '.{ext}'.")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type '.{ext}'."
+        )
+    
+    file_path = Path(get_save_path(filename))
 
-    file_path = Path(BASE_DIR) / folder / filename
     if not file_path.exists():
-        raise HTTPException(status_code=404, detail=f"File '{filename}' not found.")
-
-    # Find the agent associated with this file
-    memory = load_system_memory()
+        raise HTTPException(
+            status_code=404,
+            detail=f"File '{filename}' not found."
+        )
+    memory = memory_agent.load_all()
     doc_id_to_delete = None
+
     for doc_id, data in memory.items():
         if data.get("metadata", {}).get("file_name") == filename:
             doc_id_to_delete = doc_id
             break
 
-    # Delete file from disk
-    file_path.unlink()
-
-    # Delete agent + Pinecone index if found
     if doc_id_to_delete:
-        delete_document_agent(doc_id_to_delete, pinecone_client=pc)
-        return {
-            "message": f"File '{filename}' deleted successfully.",
-            "agent": f"Agent '{doc_id_to_delete}' and its Pinecone index removed."
-        }
+        memory_agent.delete(
+            doc_id_to_delete,
+            source_name=filename,
+            pinecone_client=pc,
+            emb_store=emb_store,
+        )
+
+    file_path.unlink()
 
     return {
         "message": f"File '{filename}' deleted successfully.",
-        "agent": "No associated agent found."
+        "deleted_agent": doc_id_to_delete
     }

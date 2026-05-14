@@ -6,7 +6,7 @@ from typing import List
 class Chunker:
     """Splits cleaned text into overlapping word-based chunks."""
 
-    def __init__(self, chunk_size: int = 100, overlap: int = 20):
+    def __init__(self, chunk_size: int = 500, overlap: int = 50):
         if overlap >= chunk_size:
             raise ValueError("overlap must be less than chunk_size")
         self._chunk_size = chunk_size

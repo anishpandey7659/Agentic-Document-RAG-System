@@ -52,7 +52,7 @@ retriever        = Retriever(groq_client=groq_client, smart_search=smart_search,
 
 if __name__ == "__main__":
     agent = upload_pipeline.run(
-        file_path  = "/home/anish/Documents/Agentic-RAG/data/text_files/python_intro.txt",
+        file_path  = "/home/anish/Downloads/paper.pdf",
         index_name = INDEX_NAME,
         domain     = "Python introduction"
     )
@@ -61,6 +61,7 @@ if __name__ == "__main__":
     print(f"  summary : {agent.summary}")
     print(f"  keywords: {agent.keywords}")
     print(f"  vector  : {agent.vector_db}")
+
 
 
 # python -m test.upload_test

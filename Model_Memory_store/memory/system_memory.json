@@ -1,30 +1,30 @@
 {
-  "doc-e9e350b2": {
-    "doc_id": "doc-e9e350b2",
-    "summary": "The Python logging module provides a flexible logging system for software development, allowing developers to track events, diagnose issues, and customize log message processing and presentation.",
+  "doc-034e4db6": {
+    "doc_id": "doc-034e4db6",
+    "summary": "Nepal's Gen Z led an uprising against corruption, toppling the government. The Rastriya Swatantra Party won elections, and 36-year-old Balen Shah became the youngest prime minister, vowing to reform governance and arrest corrupt leaders.",
     "keywords": [
-      "logging",
-      "Python",
-      "software development",
-      "loggers",
-      "handlers"
+      "Nepal",
+      "Gen Z",
+      "corruption",
+      "Balen Shah",
+      "Rastriya Swatantra Party"
     ],
     "vector_db": "agentic-rag",
     "metadata": {
       "type": "document_agent",
       "status": "active",
       "embed_model": "mistral-embed",
-      "file_name": "logging.txt"
+      "file_name": "nepal_political_summary.txt"
     }
   },
-  "doc-cb020607": {
-    "doc_id": "doc-cb020607",
-    "summary": "The document discusses Python data structures, including lists, tuples, sets, and dictionaries. It covers their usage, methods, and operations, as well as looping techniques and comparisons. The text also touches on comprehensions and best practices for working with these data types.",
+  "doc-347482e8": {
+    "doc_id": "doc-347482e8",
+    "summary": "The document discusses Python data structures, including lists, tuples, sets, and dictionaries. It covers various methods, operations, and looping techniques for these data types, enabling efficient data manipulation and processing.",
     "keywords": [
       "Python",
       "data structures",
       "lists",
-      "sets",
+      "tuples",
       "dictionaries"
     ],
     "vector_db": "agentic-rag",
@@ -35,58 +35,22 @@
       "file_name": "datastructures.txt"
     }
   },
-  "doc-aa41f950": {
-    "doc_id": "doc-aa41f950",
-    "summary": "Nepal's Gen Z-led uprising in 2025 led to a new government under 36-year-old Balen Shah, ending traditional party rule. His administration has arrested former leaders on corruption charges and implemented reforms, marking a significant shift in Nepal's politics driven by its youth.",
+  "doc-48a2f273": {
+    "doc_id": "doc-48a2f273",
+    "summary": "AIRA 2 is an AI research agent that overcomes bottlenecks in AI research, achieving state-of-the-art results on various tasks. It uses asynchronous multi-GPU worker pools, a Hidden Consistent Evaluation protocol, and ReAct agents to dynamically scope actions.",
     "keywords": [
-      "Nepal",
-      "Gen Z",
-      "Balen Shah",
-      "corruption",
-      "reform"
+      "AIRA 2",
+      "AI research agent",
+      "asynchronous multi-GPU",
+      "Hidden Consistent Evaluation",
+      "ReAct agents"
     ],
     "vector_db": "agentic-rag",
     "metadata": {
       "type": "document_agent",
       "status": "active",
       "embed_model": "mistral-embed",
-      "file_name": "nepal_political_summary.txt"
-    }
-  },
-  "doc-06b10d8b": {
-    "doc_id": "doc-06b10d8b",
-    "summary": "Agentic AI systems enable independent planning, action, and adaptation to achieve goals. The market is growing rapidly, with key trends including multi-agent systems and enterprise platform integration. Companies like Genentech, Salesforce, and Amazon are using agentic AI to automate workflows and improve efficiency.",
-    "keywords": [
-      "Agentic AI",
-      "Autonomous Systems",
-      "Enterprise Integration",
-      "AI Market",
-      "Automation"
-    ],
-    "vector_db": "agentic-rag",
-    "metadata": {
-      "type": "document_agent",
-      "status": "active",
-      "embed_model": "mistral-embed",
-      "file_name": "agentic_ai.txt"
-    }
-  },
-  "doc-383670ba": {
-    "doc_id": "doc-383670ba",
-    "summary": "The document introduces Python and Machine Learning, highlighting Python's simplicity and its use in Machine Learning applications like image recognition and recommendation systems due to its extensive libraries.",
-    "keywords": [
-      "Python",
-      "Machine Learning",
-      "Artificial Intelligence",
-      "Data Science",
-      "Automation"
-    ],
-    "vector_db": "agentic-rag",
-    "metadata": {
-      "type": "document_agent",
-      "status": "active",
-      "embed_model": "mistral-embed",
-      "file_name": "python_intro.txt"
+      "file_name": "paper.pdf"
     }
   }
 }

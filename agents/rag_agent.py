@@ -1,5 +1,4 @@
 # agents/rag_agent.py
-
 from pipeline.retriever    import Retriever
 from pipeline.smart_search import SmartSearch
 from agents.Orchestration.router.Retriver_Router import RetrievalRouter
@@ -70,7 +69,7 @@ class RAGAgent:
             self._conv_id,
             role="assistant",
             content=full_answer,
-            metadata={"sources": sources} if sources else {}
+            metadata={"sources": sources} if sources else None
         )
 
         return {"answer": full_answer, "sources": sources}

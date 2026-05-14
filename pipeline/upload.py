@@ -6,7 +6,7 @@ from typing import Optional
 
 from config import INDEX_NAME
 from Model_Memory_store.models import DocumentAgent
-
+from pathlib import Path
 # injected dependencies (all classes we built)
 from pipeline.extractor import Extractor
 from pipeline.chunker  import Chunker
@@ -15,6 +15,8 @@ from services.embedding.pinecone_embedder import PineconeEmbedder
 from services.embedding.embedding_store  import EmbeddingStore
 from services.pinecone_client import PineconeVectorStore
 from services.Document_agents import DocumentAgentFactory, AgentMemoryStore
+from fastapi import  HTTPException
+
 
 
 class UploadPipeline:
@@ -103,3 +105,6 @@ class UploadPipeline:
         except Exception as e:
             print(f"[ERROR] Pipeline failed for '{file_path}': {e}")
             raise
+
+
+    

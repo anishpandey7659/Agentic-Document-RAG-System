@@ -22,3 +22,14 @@ class EmbeddingStore:
         with open(self._filepath, "wb") as f:
             pickle.dump(data, f)
         print(f"[INFO] Saved embedding for {doc_id}")
+    
+    def delete(self, doc_id: str) -> None:
+        data = self.load()        
+        
+        if doc_id in data:
+            del data[doc_id]      
+            with open(self._filepath, "wb") as f:
+                pickle.dump(data, f)   
+            print(f"[INFO] Deleted embedding for {doc_id}")
+        else:
+            print(f"[WARNING] {doc_id} not found")

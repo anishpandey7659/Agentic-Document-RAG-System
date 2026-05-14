@@ -15,7 +15,6 @@ class PineconeClient:
         if index_name not in existing:
             self._pc.create_index(
                 name=index_name,
-                vector_type="dense",
                 dimension=dimension,
                 metric="dotproduct",
                 spec=ServerlessSpec(
@@ -31,6 +30,24 @@ class PineconeClient:
     def client(self):
         """Expose raw client for embedder or other services if needed."""
         return self._pc
+    
+    def delete_by_source(self, index_name: str, source_name: str):
+        """
+        Deletes all vectors from Pinecone index where metadata.source == source_name
+        """
+        index = self.get_index(index_name)  
+        try:
+            response = index.delete(
+                filter={
+                    "source": {"$eq": source_name}
+                }
+            )
+            print(f"Deleted all vectors with source: {source_name}")
+            return response
+
+        except Exception as e:
+            print(f"Error deleting vectors: {e}")
+            return None
 
 
 class PineconeVectorStore:
@@ -98,3 +115,4 @@ class PineconeVectorStore:
             }
             for match in results["matches"]
         ]
+    

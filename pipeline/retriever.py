@@ -6,7 +6,19 @@ from config import Tool_MODEL
 
 NO_CONTENT_MSG = "No relevant content found for your query."
 
-SYSTEM_PROMPT_RAG    = "You are a document Q&A assistant. Answer only from the provided context."
+SYSTEM_PROMPT_RAG    = """You are a STRICT extraction system.
+RULES:
+- You may ONLY copy or minimally compress sentences from the context.
+- Do NOT paraphrase or improve wording.
+- Do NOT merge multiple sentences into new explanations.
+- Do NOT add missing logical connections.
+- Each bullet must map to EXACT source text.
+
+OUTPUT FORMAT:
+- Bullet points only
+- Each bullet must include chunk_id
+- If information is not explicitly stated, omit it"""
+
 SYSTEM_PROMPT_NORMAL = "You are a helpful assistant. Give accurate answers."
 
 
