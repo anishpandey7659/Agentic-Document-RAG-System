@@ -1,9 +1,10 @@
+import time
 from typing import List, Dict
-from services.embedding.pinecone_embedder import PineconeEmbedder
-from agents.Orchestration.router.Document_Router import DocumentRouter
-from services.pinecone_client import PineconeVectorStore
-from services.Document_agents import AgentMemoryStore
-
+from core.dependencies import (
+    PineconeEmbedder,
+    PineconeVectorStore,
+    DocumentRouter,
+    AgentMemoryStore,)
 
 class SmartSearch:
     """
@@ -48,40 +49,68 @@ class SmartSearch:
             "values":  [v * (1 - alpha) for v in sparse["values"]]
         }
         return scaled_dense, scaled_sparse
+    
+    def search(self, query: str, query_embedding: List[float], mode: str = "dense", alpha: float = 0.7, top_k: int = 3) -> List[Dict]:
 
-
-    def search(self, query: str, alpha: float = 0.7, top_k: int = 5) -> List[Dict]:
+        t0 = time.perf_counter()
+        t_mem = time.perf_counter()
+        
         memory = self._memory_store.load_all()
-
+        print(f"[LATENCY] memory load: {time.perf_counter() - t_mem:.4f}s")
+        
+        t_route = time.perf_counter()
         relevant_doc_ids = self._document_router.route(query, memory)
+        print(f"[LATENCY] routing: {time.perf_counter() - t_route:.4f}s")
+        
         if not relevant_doc_ids:
             print("[ROUTER] No relevant documents found.")
             return []
+        
+        t_embed = time.perf_counter()
+        dense_vec = query_embedding
+        sparse_vec = None
 
-        query_emb = self._embedder.embed_both([query], input_type="query")[0]
-        hdense, hsparse = self.hybrid_score_norm(
-            dense=query_emb["dense"],
-            sparse=query_emb["sparse"],
-            alpha=alpha
-        )
-
+        if mode == "hybrid":
+            sparse_vec = self._embedder.embed_sparse([query], input_type="query")[0]
+        print(f"[LATENCY] embedding: {time.perf_counter() - t_embed:.4f}s")
         all_matches = []
+
         for doc_id in relevant_doc_ids:
             index_name = memory[doc_id]["vector_db"]
+            t_search = time.perf_counter()
             print(f"[INFO] Searching '{index_name}' for doc '{doc_id}' ...")
             try:
-                matches = self._vector_store.search(index_name, hdense, hsparse, top_k=top_k)
+                if mode == "hybrid":
+                    matches = self._vector_store.search(
+                        index_name=index_name,
+                        dense=dense_vec,
+                        sparse=sparse_vec,
+                        top_k=top_k
+                    )
+                else:
+                    matches = self._vector_store.search(
+                        index_name=index_name,
+                        dense=dense_vec,
+                        top_k=top_k
+                    )
+                    print("I have use dense search only")
+                print(f"[LATENCY] search({doc_id}): {time.perf_counter() - t_search:.4f}s")
                 all_matches.extend(matches)
-            except Exception as e:
-                print(f"[WARNING] Failed to search '{index_name}': {e}")
 
+            except Exception as e:
+                print(f"[WARNING] Failed search '{index_name}': {e}")
+
+        t_sort = time.perf_counter()
         all_matches.sort(key=lambda x: x["score"], reverse=True)
+        print(f"[LATENCY] sort: {time.perf_counter() - t_sort:.4f}s")
+
         return all_matches[:top_k]
 
     @staticmethod
     def build_context(matches: List[Dict]) -> str:
         parts = [
-            f"[Chunk {i} | doc: {m['doc_id']} | Rank {m['rank']} | score: {m['score']}]\n{m['text']}"
+            # f"[Chunk {i} | doc: {m['doc_id']} | Rank {m['rank']} | score: {m['score']}]\n{m['text']}"
+            f"[Chunk {i} | doc: {m['doc_id']} |  score: {m['score']}]\n{m['text']}"
             for i, m in enumerate(matches, 1)
         ]
         return "\n\n---\n\n".join(parts)

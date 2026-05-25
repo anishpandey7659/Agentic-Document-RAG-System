@@ -78,7 +78,7 @@ memory= MemoryLayer(supabase)
 
 # print(memory.create_conversation(id,title))
 
-metadata={"sources":"Testing for supabase","confidence_score":0.98,'rank':1}
+# metadata={"sources":"Testing for supabase","confidence_score":0.98,'rank':1}
 # print(memory.add_message(conv_id,role="User",content="Hi how are you",metadata=metadata))
 # history=memory.get_recent_messages(conv_id,4)
 # print(history)

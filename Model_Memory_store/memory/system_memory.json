@@ -35,15 +35,15 @@
       "file_name": "datastructures.txt"
     }
   },
-  "doc-48a2f273": {
-    "doc_id": "doc-48a2f273",
-    "summary": "AIRA 2 is an AI research agent that overcomes bottlenecks in AI research, achieving state-of-the-art results on various tasks. It uses asynchronous multi-GPU worker pools, a Hidden Consistent Evaluation protocol, and ReAct agents to dynamically scope actions.",
+  "doc-d5bbb404": {
+    "doc_id": "doc-d5bbb404",
+    "summary": "AIRA2, an AI research agent, overcomes bottlenecks in AI research with asynchronous multi-GPU execution, Hidden Consistent Evaluation, and ReAct agents. It outperforms baselines, achieving state-of-the-art results on various tasks while highlighting the need for rigorous evaluation and integrity checks.",
     "keywords": [
-      "AIRA 2",
+      "AIRA2",
       "AI research agent",
-      "asynchronous multi-GPU",
       "Hidden Consistent Evaluation",
-      "ReAct agents"
+      "ReAct agents",
+      "asynchronous multi-GPU execution"
     ],
     "vector_db": "agentic-rag",
     "metadata": {
@@ -51,6 +51,24 @@
       "status": "active",
       "embed_model": "mistral-embed",
       "file_name": "paper.pdf"
+    }
+  },
+  "doc-2e2ef845": {
+    "doc_id": "doc-2e2ef845",
+    "summary": "Deep Agents are autonomous AI systems built on LangChain, enabling complex reasoning, tool interaction, and multi-agent collaboration. They support customization, human-in-the-loop workflows, and various backends, making them suitable for production-grade AI applications with advanced features like summarization and task delegation.",
+    "keywords": [
+      "Deep Agents",
+      "LangChain",
+      "Autonomous AI",
+      "Multi-agent collaboration",
+      "Human-in-the-loop workflows"
+    ],
+    "vector_db": "agentic-rag",
+    "metadata": {
+      "type": "document_agent",
+      "status": "active",
+      "embed_model": "mistral-embed",
+      "file_name": "Deep Agent in LangChain.txt"
     }
   }
 }

@@ -4,17 +4,15 @@ import os
 import uuid
 from typing import Optional
 
-from config import INDEX_NAME
+from core.config import INDEX_NAME
+
+from core.dependencies import (
+    Extractor,Chunker,Summarizer,
+    PineconeEmbedder,EmbeddingStore,PineconeVectorStore,
+    DocumentAgentFactory,AgentMemoryStore,
+)
 from Model_Memory_store.models import DocumentAgent
 from pathlib import Path
-# injected dependencies (all classes we built)
-from pipeline.extractor import Extractor
-from pipeline.chunker  import Chunker
-from pipeline.summarizer import Summarizer
-from services.embedding.pinecone_embedder import PineconeEmbedder
-from services.embedding.embedding_store  import EmbeddingStore
-from services.pinecone_client import PineconeVectorStore
-from services.Document_agents import DocumentAgentFactory, AgentMemoryStore
 from fastapi import  HTTPException
 
 
@@ -50,7 +48,7 @@ class UploadPipeline:
         file_path:  str,
         index_name: str,
         domain:     str,
-    ) -> DocumentAgent:
+    ) -> DocumentAgent:  
 
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
@@ -69,16 +67,19 @@ class UploadPipeline:
 
             # 2. Chunk
             print("[INFO] Chunking text...")
-            chunks = self._chunker.chunk(cleaned_text)
+            chunks = self._chunker.chunk(cleaned_text,file_path,{"domain": domain})
             print(f"[INFO] Created {len(chunks)} chunks.")
+
+            # Text from document 
+            texts = [doc.page_content for doc in chunks]
 
             # 3. Embed chunks (dense + sparse) → store in Pinecone
             print("[INFO] Generating embeddings...")
-            embeddings = self._embedder.embed_both(chunks, input_type="passage")
+            embeddings = self._embedder.embed_both(texts, input_type="passage")
 
             print("[INFO] Storing in Pinecone...")
             vector_db = self._vector_store.store(
-                doc_id, chunks, embeddings, index_name, file_name, domain
+                doc_id, texts, embeddings, index_name, file_name, domain
             )
 
             # 4. Summarize

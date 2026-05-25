@@ -1,6 +1,6 @@
 from mistralai.client import Mistral
 from typing import List
-from config import EMBED_MODEL
+from core.config import EMBED_MODEL
 
 class MistralEmbedder:
     def __init__(self, api_key: str):

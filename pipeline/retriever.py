@@ -2,22 +2,19 @@ from typing import List, Dict, Generator, Union
 from services.GroqClient import groq_client
 from pipeline.smart_search import SmartSearch
 from pipeline.rerank import Reranker
-from config import Tool_MODEL
+from core.config import Tool_MODEL
+import time
 
 NO_CONTENT_MSG = "No relevant content found for your query."
 
-SYSTEM_PROMPT_RAG    = """You are a STRICT extraction system.
-RULES:
-- You may ONLY copy or minimally compress sentences from the context.
-- Do NOT paraphrase or improve wording.
-- Do NOT merge multiple sentences into new explanations.
-- Do NOT add missing logical connections.
-- Each bullet must map to EXACT source text.
 
-OUTPUT FORMAT:
-- Bullet points only
-- Each bullet must include chunk_id
-- If information is not explicitly stated, omit it"""
+SYSTEM_PROMPT_RAG    = """You are a helpful assistant. Answer the user's question using ONLY the provided context. Follow these rules strictly:
+
+1. If the answer is in the context, answer directly and cite the relevant source.
+2. If the context partially answers the question, share what you know and explicitly state what is missing.
+3. If the context does not contain the answer, say: "I don't have enough information in the provided context to answer this question."
+4. Do NOT use prior knowledge or make assumptions beyond what the context states.
+5. Keep answers concise and grounded in the context."""
 
 SYSTEM_PROMPT_NORMAL = "You are a helpful assistant. Give accurate answers."
 
@@ -65,32 +62,42 @@ Answer:"""
     def retrieve_and_answer(
         self,
         query: str,
+        query_embedding: List[float],
+        mode: str = "dense",
         alpha: float = 0.7,
         top_k: int = 6,
         top_n: int = 3,
         show_chunks: bool = False,
         stream: bool = False,
-    ) -> Union[Dict, Generator]:
 
-        print(f"\n[QUERY] {query}")
-        matches = self._smart_search.search(query, alpha, top_k)
+    ) -> Union[Dict, Generator]:
+        
+        t_retrieve = time.perf_counter()
+        if mode =="hybrid":
+            matches = self._smart_search.search(query,query_embedding, mode,alpha,top_k)
+        else:
+            matches = self._smart_search.search(query, query_embedding, mode, top_k)
+        print(f"[Latency] Retrieval: {time.perf_counter()-t_retrieve:.4f}s")
 
         if not matches:
             return self._empty_response(stream)
-
+        t_rerank = time.perf_counter()
         reranked = self._reranker.rerank(query, matches, top_n)
+        print(f"[Latency] Reranking: {time.perf_counter()-t_rerank:.4f}s")
         if not reranked:
             return self._empty_response(stream)
 
         if show_chunks:
             self._log_chunks(reranked)
-
+        t_context = time.perf_counter()
         context = SmartSearch.build_context(reranked)
+        print(f"[Latency] Context Building: {time.perf_counter()-t_context:.4f}s")
 
         if stream:
             return self._stream_response(query, context, reranked)
-
+        t_generation = time.perf_counter()
         answer = self._answer_with_context(query, context)
+        print(f"[Latency] Answer Generation: {time.perf_counter()-t_generation:.4f}s")
         return {
             "answer":  answer.choices[0].message.content.strip(),
             "sources": reranked

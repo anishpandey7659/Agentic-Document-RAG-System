@@ -1,6 +1,6 @@
 import cohere
 from typing import List, Dict
-from config import COHERE_API_KEY
+from core.config import COHERE_API_KEY
 
 
 class Reranker:

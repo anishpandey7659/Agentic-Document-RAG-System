@@ -1,9 +1,8 @@
 import json
 from typing import Dict, Optional
 from dataclasses import asdict
-
 from Model_Memory_store.models import DocumentAgent
-from config import EMBED_MODEL, MEMORY_FILE,EMBEDDING_FILE
+from core.config import EMBED_MODEL, MEMORY_FILE,EMBEDDING_FILE
 
 
 class DocumentAgentFactory:
@@ -38,7 +37,7 @@ class AgentMemoryStore:
         self._emb_path = embeded_file
 
 
-    # private
+ 
     def _load(self) -> Dict:
         try:
             with open(self._path, "r") as f:
@@ -51,7 +50,7 @@ class AgentMemoryStore:
         with open(self._path, "w") as f:
             json.dump(memory, f, indent=2)
 
-    # Public
+
     def register(self, agent: DocumentAgent) -> None:
         memory = self._load()
         memory[agent.doc_id] = asdict(agent)

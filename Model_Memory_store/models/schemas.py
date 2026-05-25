@@ -26,3 +26,11 @@ class RouteLLM(BaseModel):
         default=False,
         description="Whether to retrieve documents from the vector database or not."
     )
+
+
+class GradeDocuments(BaseModel):
+    """Binary score for relevance check on retrieved documents."""
+
+    binary_score: bool = Field(
+        description="True if documents are relevant to the question, otherwise False"
+    )

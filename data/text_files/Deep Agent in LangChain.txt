@@ -1,0 +1,556 @@
+Deep Agent in LangChain: A Comprehensive Guide
+Introduction
+Deep Agent represents a significant advancement in the LangChain ecosystem, offering a sophisticated framework for building autonomous AI agents capable of complex reasoning, tool interaction, and multi-agent collaboration. Unlike traditional chatbots or simple LLM wrappers, Deep Agents are designed to handle intricate workflows, manage persistent state, and execute advanced tasks with human-like decision-making capabilities.
+
+This comprehensive guide explores the architecture, features, implementation details, and best practices for leveraging Deep Agents in your applications.
+
+What is a Deep Agent?
+A Deep Agent is an intelligent autonomous system built on LangChain that combines language models with a sophisticated toolkit for reasoning, planning, and execution. At its core, a Deep Agent:
+
+Requires LLM Tool Calling Support: Deep Agents mandate that the underlying language model supports function calling capabilities, enabling the agent to invoke tools programmatically
+Manages Complex Workflows: Handles multi-step processes, file operations, and computational tasks
+Maintains State and Memory: Persists information across interactions using checkpointing and memory systems
+Coordinates Multiple Agents: Can delegate tasks to subagents for specialized problem-solving
+Operates in Sandboxed Environments: Executes code and shell commands safely within isolated execution contexts
+Architecture Overview
+Core Components
+1. State Management
+Deep Agents operate through a sophisticated state machine that tracks:
+
+Messages and conversation history
+Tool execution results
+File system state
+Memory and context
+Interruption points for human-in-the-loop workflows
+The agent's state is managed through a CompiledStateGraph, which provides deterministic execution and reproducibility.
+
+2. Built-in Tools
+By default, Deep Agents come equipped with a comprehensive toolkit:
+
+Todo Management: write_todos for managing task lists
+File Operations: ls, read_file, write_file, edit_file, glob, grep for filesystem manipulation
+Shell Execution: execute for running shell commands in a sandbox environment
+Subagent Invocation: task for delegating work to specialized subagents
+3. Backend Systems
+Deep Agents support multiple backend implementations:
+
+StateBackend: In-memory state management for stateless deployments
+StoreBackend: Uses LangGraph's store abstraction for persistent storage
+FilesystemBackend: Direct filesystem access with security controls
+DaytonaSandbox: Isolated execution environment for secure code execution
+CompositeBackend: Routes different paths to different backends
+4. Middleware Layer
+Middleware components enable advanced features:
+
+SummarizationMiddleware: Manages context length by intelligently summarizing conversation history
+SummarizationToolMiddleware: Coordinates summarization with tool interactions
+SkillSandboxSyncMiddleware: Synchronizes skills between storage backends and sandbox environments
+Creating a Deep Agent: Basic Setup
+Simple Agent with Tool Support
+The most straightforward approach to creating a Deep Agent:
+
+
+# pip install -qU deepagents langchain-openai
+from deepagents import create_deep_agent
+
+def get_weather(city: str) -> str:
+    """Get weather for a given city."""
+    return "It's always sunny in {city}!"
+
+agent = create_deep_agent(
+    model="openai:gpt-4",
+    tools=[get_weather],
+    system_prompt="You are a helpful assistant",
+)
+
+# Run the agent
+result = agent.invoke(
+    {"messages": [{"role": "user", "content": "what is the weather in sf"}]}
+)
+This example demonstrates:
+
+Model specification with provider prefix
+Custom tool definition
+System prompt configuration
+Agent invocation with message input
+Multi-Provider Support
+Deep Agents work seamlessly with various LLM providers:
+
+
+# Google Gemini
+agent = create_deep_agent(
+    model="google_genai:gemini-3.1-pro-preview",
+    tools=[get_weather],
+)
+
+# Anthropic Claude
+agent = create_deep_agent(
+    model="anthropic:claude-sonnet-4-6",
+    tools=[get_weather],
+)
+
+# OpenRouter
+agent = create_deep_agent(
+    model="openrouter:anthropic/claude-sonnet-4-6",
+    tools=[get_weather],
+)
+
+# Local models with Ollama
+agent = create_deep_agent(
+    model="ollama:devstral-2",
+    tools=[get_weather],
+)
+
+# Fireworks
+agent = create_deep_agent(
+    model="fireworks:accounts/fireworks/models/qwen3p5-397b-a17b",
+    tools=[get_weather],
+)
+Advanced Configuration
+The create_deep_agent() Function
+The create_deep_agent() function is highly configurable with numerous parameters:
+
+
+from deepagents import create_deep_agent
+from langgraph.checkpoint.memory import MemorySaver
+
+agent = create_deep_agent(
+    # Core Configuration
+    model="openai:gpt-4",                          # LLM to use
+    tools=[my_tool_1, my_tool_2],                 # Custom tools
+    system_prompt="Custom system instructions",    # Agent behavior
+    
+    # Agent Capabilities
+    subagents=[specialized_agent_1],              # Subagents for delegation
+    skills=["/skills/path"],                      # Skill definitions
+    memory=["/memory/preferences.md"],            # Memory files
+    
+    # Execution Environment
+    backend=filesystem_backend,                   # Execution backend
+    permissions=[filesystem_permission],          # File system access controls
+    
+    # Middleware and Interception
+    middleware=[summarization_mw],                # Processing middleware
+    interrupt_on={                                # Human-in-the-loop
+        "write_file": True,
+        "edit_file": True,
+        "read_file": False
+    },
+    
+    # Response and Context
+    response_format=structured_schema,            # Response format validation
+    context_schema=custom_context_type,           # Context type definition
+    
+    # Persistence and Caching
+    checkpointer=MemorySaver(),                  # State persistence
+    store=base_store,                            # Data storage
+    cache=base_cache,                            # Response caching
+    
+    # Debugging
+    debug=True,                                  # Debug mode
+    name="my_agent"                              # Agent identifier
+)
+Structured Output with Response Format
+Deep Agents can enforce structured outputs using schema validation:
+
+
+import { createDeepAgent } from "deepagents";
+import { z } from "zod";
+
+const weatherReportSchema = z.object({
+  location: z.string().describe("The location for this weather report"),
+  temperature: z.number().describe("Current temperature in Celsius"),
+  condition: z.string().describe("Current weather condition"),
+  humidity: z.number().describe("Humidity percentage"),
+  windSpeed: z.number().describe("Wind speed in km/h"),
+  forecast: z.string().describe("Brief forecast for the next 24 hours"),
+});
+
+const agent = await createDeepAgent({
+  responseFormat: weatherReportSchema,
+  tools: [internetSearch],
+});
+
+const result = await agent.invoke({
+  messages: [
+    {
+      role: "user",
+      content: "What's the weather like in San Francisco?",
+    },
+  ],
+});
+
+console.log(result.structuredResponse);
+// {
+//   location: 'San Francisco, California',
+//   temperature: 18.3,
+//   condition: 'Sunny',
+//   humidity: 48,
+//   windSpeed: 7.6,
+//   forecast: 'Clear skies with temperatures remaining mild...'
+// }
+Working with Skills
+Skills are specialized knowledge domains that Deep Agents can access to handle specific types of queries. Skills are typically defined in markdown files with structured metadata.
+
+Basic Skill Implementation
+
+from urllib.request import urlopen
+from deepagents import create_deep_agent
+from deepagents.backends import StateBackend, StoreBackend, FilesystemBackend
+from deepagents.backends.utils import create_file_data
+from langgraph.checkpoint.memory import MemorySaver
+
+# Example: Using a skill from a remote URL
+skill_url = "https://raw.githubusercontent.com/langchain-ai/deepagents/refs/heads/main/libs/cli/examples/skills/langgraph-docs/SKILL.md"
+with urlopen(skill_url) as response:
+    skill_content = response.read().decode('utf-8')
+
+checkpointer = MemorySaver()
+
+skills_files = {
+    "/skills/langgraph-docs/SKILL.md": create_file_data(skill_content)
+}
+
+agent = create_deep_agent(
+    model="google_genai:gemini-3.1-pro-preview",
+    skills=["/skills/"],
+    checkpointer=checkpointer,
+)
+
+result = agent.invoke(
+    {
+        "messages": [
+            {
+                "role": "user",
+                "content": "What is langgraph?"
+            }
+        ],
+        "files": skills_files
+    },
+    config={"configurable": {"thread_id": "12345"}},
+)
+Skills with Different Backends
+StateBackend (Default):
+
+
+from deepagents import create_deep_agent
+from langgraph.checkpoint.memory import MemorySaver
+
+checkpointer = MemorySaver()
+
+agent = create_deep_agent(
+    model="google_genai:gemini-3.1-pro-preview",
+    skills=["/skills/"],
+    checkpointer=checkpointer,
+)
+StoreBackend with Persistent Storage:
+
+
+from deepagents import create_deep_agent
+from deepagents.backends import StoreBackend
+from langgraph.store.memory import InMemoryStore
+
+store = InMemoryStore()
+
+# Add skills to store
+store.put(
+    namespace=("filesystem",),
+    key="/skills/langgraph-docs/SKILL.md",
+    value=create_file_data(skill_content)
+)
+
+agent = create_deep_agent(
+    model="google_genai:gemini-3.1-pro-preview",
+    backend=StoreBackend(),
+    store=store,
+    skills=["/skills/"]
+)
+FilesystemBackend with Sandbox Security:
+
+
+from deepagents import create_deep_agent
+from deepagents.backends.filesystem import FilesystemBackend
+from langgraph.checkpoint.memory import MemorySaver
+
+checkpointer = MemorySaver()
+
+agent = create_deep_agent(
+    model="google_genai:gemini-3.1-pro-preview",
+    backend=FilesystemBackend(root_dir="/Users/user/project"),
+    skills=["/Users/user/project/skills/"],
+    interrupt_on={
+        "write_file": True,    # Require human approval
+        "read_file": False,    # No approval needed
+        "edit_file": True
+    },
+    checkpointer=checkpointer,  # Required for interrupts
+)
+Context-Aware Memory and Personalization
+Deep Agents can maintain isolated, user-specific memories and preferences using the store backend with namespace isolation:
+
+
+from deepagents import create_deep_agent
+from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
+from deepagents.backends.utils import create_file_data
+from langgraph.store.memory import InMemoryStore
+
+store = InMemoryStore()
+
+# Seed preferences for Alice
+store.put(
+    ("user-alice",),
+    "/memories/preferences.md",
+    create_file_data("""## Preferences
+- Likes concise bullet points
+- Prefers Python examples
+"""),
+)
+
+# Seed preferences for Bob
+store.put(
+    ("user-bob",),
+    "/memories/preferences.md",
+    create_file_data("""## Preferences
+- Likes detailed explanations
+- Prefers TypeScript examples
+"""),
+)
+
+# Seed a skill specific to Alice
+store.put(
+    ("user-alice",),
+    "/skills/langgraph-docs/SKILL.md",
+    create_file_data("""---
+name: langgraph-docs
+description: Fetch relevant LangGraph documentation.
+---
+Use the fetch_url tool to read docs...
+"""),
+)
+
+agent = create_deep_agent(
+    model="google_genai:gemini-3.1-pro-preview",
+    memory=["/memories/preferences.md"],
+    skills=["/skills/"],
+    backend=lambda rt: CompositeBackend(
+        default=StateBackend(rt),
+        routes={
+            "/memories/": StoreBackend(
+                rt,
+                namespace=lambda rt: (rt.server_info.user.identity,),
+            ),
+            "/skills/": StoreBackend(
+                rt,
+                namespace=lambda rt: (rt.server_info.user.identity,),
+            ),
+        },
+    ),
+    store=store,
+)
+In a deployed environment, each authenticated request automatically isolates memories and skills by user identity.
+
+Context Management with Summarization Middleware
+For long-running agents dealing with extended conversations, Deep Agents include summarization middleware to manage token consumption:
+
+
+from deepagents import create_deep_agent
+from deepagents.middleware.summarization import (
+    SummarizationMiddleware,
+    SummarizationToolMiddleware,
+)
+from deepagents.backends import FilesystemBackend
+
+backend = FilesystemBackend(root_dir="/data")
+
+# Configure summarization to trigger at 85% of context limit
+# and keep 10% of context after summarization
+summ = SummarizationMiddleware(
+    model="gpt-4o-mini",
+    backend=backend,
+    trigger=("fraction", 0.85),  # Trigger at 85% capacity
+    keep=("fraction", 0.10),     # Retain 10% after summary
+)
+
+tool_mw = SummarizationToolMiddleware(summ)
+
+agent = create_deep_agent(
+    middleware=[summ, tool_mw]
+)
+The summarization middleware:
+
+Monitors context usage during execution
+Triggers summarization when specified thresholds are reached
+Preserves critical information while reducing token consumption
+Works seamlessly with tool execution
+Human-in-the-Loop Workflows
+Deep Agents support interruption points for human review and approval:
+
+
+from deepagents import create_deep_agent
+from deepagents.backends.filesystem import FilesystemBackend
+from langgraph.checkpoint.memory import MemorySaver
+
+checkpointer = MemorySaver()
+
+agent = create_deep_agent(
+    model="google_genai:gemini-3.1-pro-preview",
+    backend=FilesystemBackend(root_dir="/Users/user/project"),
+    interrupt_on={
+        "write_file": True,    # Require approval: approve, edit, reject
+        "read_file": False,    # No interrupts
+        "edit_file": True,     # Require approval
+        "execute": {           # Advanced config
+            "resume_type": "approve",  # Auto-approve approach
+        }
+    },
+    checkpointer=checkpointer,  # REQUIRED for human-in-the-loop
+)
+The checkpointer is essential for human-in-the-loop workflows, enabling the agent to pause, receive human feedback, and resume execution.
+
+Subagents and Task Delegation
+Deep Agents can coordinate with specialized subagents:
+
+
+from deepagents import create_deep_agent, SubAgent
+
+# Create specialized subagents
+research_agent = SubAgent(
+    name="research",
+    description="Researches topics using web tools"
+)
+
+analysis_agent = SubAgent(
+    name="analysis",
+    description="Analyzes data and generates insights"
+)
+
+# Main agent coordinates their work
+main_agent = create_deep_agent(
+    model="openai:gpt-4",
+    subagents=[research_agent, analysis_agent],
+    system_prompt="You are a research coordinator..."
+)
+The agent can then use the task tool to delegate work to subagents.
+
+Best Practices
+1. Model Selection
+Always choose a model with tool-calling support
+Consider latency and cost implications
+Test with different providers to find optimal performance
+2. Permission and Security
+
+from deepagents.backends import FilesystemPermission
+
+# Restrict file operations to specific directories
+permissions = [
+    FilesystemPermission(
+        path="/allowed/directory",
+        read=True,
+        write=True,
+        execute=False
+    )
+]
+
+agent = create_deep_agent(
+    permissions=permissions,
+    backend=FilesystemBackend(root_dir="/")
+)
+3. Error Handling and Debugging
+
+agent = create_deep_agent(
+    debug=True,  # Enable detailed logging
+    model="openai:gpt-4",
+)
+4. State Persistence
+Always use a checkpointer for production deployments:
+
+
+from langgraph.checkpoint.postgres import PostgresSaver
+
+checkpointer = PostgresSaver.from_conn_string(
+    "postgresql://user:password@localhost/langraph"
+)
+
+agent = create_deep_agent(
+    checkpointer=checkpointer,
+)
+5. Tool Documentation
+Provide clear, detailed docstrings for custom tools:
+
+
+def advanced_calculation(x: float, y: float) -> float:
+    """
+    Performs advanced mathematical calculations.
+    
+    Args:
+        x: First operand (float)
+        y: Second operand (float)
+    
+    Returns:
+        float: The result of the calculation
+    
+    Raises:
+        ValueError: If inputs are invalid
+    """
+    pass
+Common Use Cases
+1. Research and Analysis Agent
+
+agent = create_deep_agent(
+    model="openai:gpt-4",
+    tools=[web_search, document_reader, analyzer],
+    system_prompt="You are a research analyst. Search for information, read documents, and provide comprehensive analysis.",
+    skills=["/skills/research/"]
+)
+2. Code Assistant Agent
+
+agent = create_deep_agent(
+    model="openai:gpt-4",
+    backend=FilesystemBackend(root_dir="/project"),
+    tools=[read_file, write_file, execute_shell, test_runner],
+    system_prompt="You are a code assistant. Help developers by reading, writing, and testing code.",
+    interrupt_on={"write_file": True}  # Review before writing
+)
+3. Multi-Agent Orchestration
+
+agent = create_deep_agent(
+    model="openai:gpt-4",
+    subagents=[
+        researcher_agent,
+        writer_agent,
+        editor_agent
+    ],
+    system_prompt="Coordinate with specialists to produce high-quality content."
+)
+Performance Optimization
+Token Management
+Use summarization middleware for long conversations
+Configure appropriate context limits
+Monitor token consumption
+Caching
+
+from langchain_openai import ChatOpenAI
+
+cache = ChatOpenAI(cache=True)
+agent = create_deep_agent(cache=cache)
+Batch Processing
+
+# Process multiple tasks efficiently
+results = []
+for task in tasks:
+    result = agent.invoke({"messages": [{"role": "user", "content": task}]})
+    results.append(result)
+Monitoring and Logging
+Deep Agents integrate with LangSmith for monitoring:
+
+
+import os
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_API_KEY"] = "your_api_key"
+os.environ["LANGCHAIN_PROJECT"] = "deep-agents"
+
+agent = create_deep_agent(debug=True)
+Conclusion
+Deep Agents represent a significant leap forward in building autonomous AI systems. They combine sophisticated reasoning capabilities with practical tool access, state management, and human oversight mechanisms. Whether you're building research assistants, code helpers, or complex multi-agent orchestration systems, Deep Agents provide the architectural foundation and tooling needed for production-grade AI applications.
+
+The flexibility of Deep Agents—supporting multiple backends, providers, and customization options—makes them suitable for a wide range of use cases. As you implement Deep Agents, remember to prioritize security, maintain clear communication flows, and leverage the built-in debugging and monitoring capabilities to ensure your agents operate reliably and efficiently.

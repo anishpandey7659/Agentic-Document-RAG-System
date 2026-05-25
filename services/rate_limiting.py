@@ -1,7 +1,7 @@
 import time
 import re
 from groq import Groq, RateLimitError
-from config import GROQ_TPM_LIMIT, GROQ_TPM_BUFFER, TOKEN_WINDOW, GROQ_API_KEY
+from core.config import GROQ_TPM_LIMIT, GROQ_TPM_BUFFER, TOKEN_WINDOW, GROQ_API_KEY
 
 
 class TokenBudget:

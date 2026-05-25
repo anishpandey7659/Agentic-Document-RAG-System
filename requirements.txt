@@ -15,5 +15,9 @@ cohere
 langchain-text-splitters
 scikit-learn
 supabase
-
+pymupdf
+python-docx
+langchain_community
+langchain-tavily
+redis
 # pip install -r requirements.txt

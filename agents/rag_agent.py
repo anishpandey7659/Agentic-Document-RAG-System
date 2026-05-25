@@ -1,8 +1,9 @@
 # agents/rag_agent.py
-from pipeline.retriever    import Retriever
-from pipeline.smart_search import SmartSearch
+from pipeline import Retriever, SmartSearch
 from agents.Orchestration.router.Retriver_Router import RetrievalRouter
-from services.Document_agents import AgentMemoryStore
+from services import PineconeEmbedder, AgentMemoryStore
+from cache import SemanticCache , LLMResponseCache, EmbeddingCache
+
 
 
 class RAGAgent:
@@ -18,17 +19,29 @@ class RAGAgent:
         retriever:        Retriever,
         retrieval_router: RetrievalRouter,
         memory_store:     AgentMemoryStore,
-        memory,           # your ConversationMemory
+        embedder:         PineconeEmbedder,
+        memory,          # your ConversationMemory
         conv_id:  str,
+        SemanticCache: SemanticCache,
     ):
         self._retriever        = retriever
         self._retrieval_router = retrieval_router
         self._memory_store     = memory_store
         self._memory           = memory
+        self._embedder        = embedder
         self._conv_id          = conv_id
+        self._semantic_cache   = SemanticCache
 
-    def run(self, query: str, stream: bool = True):
+    def run(self, query: str,mode: str = "dense",stream: bool = True):
         print(f"\n[QUERY] {query}")
+
+        query_embedding = self._embedder.embed_dense([query], input_type="query")[0]
+        semantic_cache_result = self._semantic_cache.find(query_embedding)
+
+        if semantic_cache_result:
+            print("[SEMANTIC CACHE HIT] response")
+            self._memory.add_message(self._conv_id, role="assistant", content=semantic_cache_result)
+            return {"answer": semantic_cache_result, "sources": None}
 
         # 1. Log user message
         self._memory.add_message(self._conv_id, role="user", content=query)
@@ -49,7 +62,7 @@ class RAGAgent:
         # 3b. RAG pipeline
         else:
             print("\n[MODE] RAG retrieval\nAnswer:")
-            for event in self._retriever.retrieve_and_answer(query=query, stream=stream):
+            for event in self._retriever.retrieve_and_answer(query=query, query_embedding=query_embedding, mode=mode, stream=stream):
                 if event["type"] == "sources":
                     sources = event["sources"]
                 elif event["type"] == "token":
@@ -63,7 +76,7 @@ class RAGAgent:
             print("\nSources:")
             for s in sources:
                 print(f"  [{s['rank']}] {s['source']} (score={s['score']})")
-
+        
         # 5. Log assistant response
         self._memory.add_message(
             self._conv_id,

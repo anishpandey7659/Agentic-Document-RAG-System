@@ -1,6 +1,6 @@
 import os
 import pickle
-from config import EMBEDDING_FILE
+from core.config import EMBEDDING_FILE
 
 class EmbeddingStore:
     def __init__(self, filepath: str = EMBEDDING_FILE):

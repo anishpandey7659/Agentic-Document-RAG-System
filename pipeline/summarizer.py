@@ -1,7 +1,7 @@
 # pipeline/summarizer.py
 from typing import List
-from config import summarize_llm
-from services.GroqClient import groq_client
+from core.config import summarize_llm
+from core.dependencies import groq_client
 from Model_Memory_store.models import DocumentSummary
 
 
@@ -23,7 +23,6 @@ class Summarizer:
         self._groq  = groq_client
         self._model = model
 
-    # ── Private ────────────────────────────────────────────────
 
     def _chunk_text(self, text: str) -> List[str]:
         if len(text) <= self.CHUNK_SIZE:
@@ -77,7 +76,6 @@ Parts:
             response.choices[0].message.content
         )
 
-    # ── Public ─────────────────────────────────────────────────
 
     def summarize(self, text: str) -> dict:
         chunks = self._chunk_text(text)

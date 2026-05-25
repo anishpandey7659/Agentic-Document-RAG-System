@@ -1,6 +1,6 @@
 from pinecone import Pinecone, ServerlessSpec
-from typing import List, Dict
-from config import PINECONE_API_KEY, PINECONE_CLOUD, PINECONE_REGION
+from typing import List, Dict, Optional
+from core.config import PINECONE_API_KEY, PINECONE_CLOUD, PINECONE_REGION
 
 
 class PineconeClient:
@@ -91,18 +91,24 @@ class PineconeVectorStore:
         self,
         index_name: str,
         dense: List[float],
-        sparse: Dict,
+        sparse: Optional[Dict[str, List[float]]] = None,
         top_k: int = 5
-    ) -> List[Dict]:
+        ) -> List[Dict]:
+
         index = self._client.get_index(index_name)
 
-        results = index.query(
-            namespace="",
-            top_k=top_k,
-            vector=dense,
-            sparse_vector=sparse,
-            include_metadata=True
-        )
+        query_params = {
+            "namespace": "",
+            "top_k": top_k,
+            "vector": dense,
+            "include_metadata": True
+        }
+
+        # only add sparse if it exists
+        if sparse is not None:
+            query_params["sparse_vector"] = sparse
+
+        results = index.query(**query_params)
 
         return [
             {
@@ -115,4 +121,3 @@ class PineconeVectorStore:
             }
             for match in results["matches"]
         ]
-    
