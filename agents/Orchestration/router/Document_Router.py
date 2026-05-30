@@ -2,10 +2,8 @@
 import numpy as np
 from typing import List, Dict
 from sklearn.metrics.pairwise import cosine_similarity
-from config import GROQ_API_KEY, Tool_MODEL
-from services.GroqClient import groq_client
-from services.embedding.embedding_store import EmbeddingStore
-from services.embedding.pinecone_embedder import PineconeEmbedder
+from core.config import GROQ_API_KEY, Tool_MODEL
+from services import EmbeddingStore, PineconeEmbedder, groq_client
 from Model_Memory_store.models.schemas import RouteLLM, RouteDecision
 
 class DocumentRouter:
@@ -32,13 +30,13 @@ class DocumentRouter:
         self._top_k   = top_k
 
     # Stage 1: Embedding similarity
-    def _get_candidates(self, query: str) -> List[str]:
+    def _get_candidates(self, query: str, query_embedding: List[float]) -> List[str]:
         """Returns top-k doc_ids by cosine similarity."""
         doc_embeddings = self._store.load()
         if not doc_embeddings:
             return []
 
-        query_vec = self._embedder.embed_dense([query], input_type="query")[0]
+        query_vec = query_embedding
         query_vec = np.array(query_vec).reshape(1, -1)
 
         scores = [
@@ -70,12 +68,12 @@ class DocumentRouter:
             )
         return "\n\n".join(entries)
 
-    def route(self, query: str, memory: Dict) -> List[str]:
+    def route(self, query: str, query_embedding: List[float], memory: Dict) -> List[str]:
         """Returns validated doc_ids most relevant to the query."""
         if not memory:
             raise RuntimeError("No documents in memory.")
 
-        candidate_ids = self._get_candidates(query)
+        candidate_ids = self._get_candidates(query,query_embedding)
         print(f"[ROUTER] Embedding candidates: {candidate_ids}")
 
         catalog = self._build_catalog(candidate_ids, memory)

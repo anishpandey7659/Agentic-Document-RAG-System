@@ -1,7 +1,7 @@
 # pipeline/summarizer.py
 from typing import List
 from core.config import summarize_llm
-from core.dependencies import groq_client
+from services.GroqClient import groq_client
 from Model_Memory_store.models import DocumentSummary
 
 

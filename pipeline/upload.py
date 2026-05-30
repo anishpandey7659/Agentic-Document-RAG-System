@@ -3,15 +3,14 @@
 import os
 import uuid
 from typing import Optional
-
 from core.config import INDEX_NAME
 
-from core.dependencies import (
-    Extractor,Chunker,Summarizer,
+from pipeline import Extractor,Chunker,Summarizer
+from services import (
     PineconeEmbedder,EmbeddingStore,PineconeVectorStore,
-    DocumentAgentFactory,AgentMemoryStore,
-)
+    DocumentAgentFactory,AgentMemoryStore,)
 from Model_Memory_store.models import DocumentAgent
+
 from pathlib import Path
 from fastapi import  HTTPException
 

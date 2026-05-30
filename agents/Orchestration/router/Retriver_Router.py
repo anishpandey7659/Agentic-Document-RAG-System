@@ -1,4 +1,4 @@
-from config import GROQ_API_KEY, Tool_MODEL
+from core.config import GROQ_API_KEY, Tool_MODEL
 from services.mistralai_client import mistral_client
 from Model_Memory_store.models.schemas import RouteLLM
 from services.GroqClient import groq_client

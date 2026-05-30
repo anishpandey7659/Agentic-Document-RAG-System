@@ -1,10 +1,9 @@
 import time
 from typing import List, Dict
-from core.dependencies import (
-    PineconeEmbedder,
-    PineconeVectorStore,
-    DocumentRouter,
-    AgentMemoryStore,)
+#1st ways
+from agents.Orchestration.router.Document_Router import DocumentRouter
+from services import PineconeEmbedder, PineconeVectorStore, AgentMemoryStore
+
 
 class SmartSearch:
     """
@@ -59,7 +58,7 @@ class SmartSearch:
         print(f"[LATENCY] memory load: {time.perf_counter() - t_mem:.4f}s")
         
         t_route = time.perf_counter()
-        relevant_doc_ids = self._document_router.route(query, memory)
+        relevant_doc_ids = self._document_router.route(query, query_embedding, memory)
         print(f"[LATENCY] routing: {time.perf_counter() - t_route:.4f}s")
         
         if not relevant_doc_ids:
@@ -93,7 +92,6 @@ class SmartSearch:
                         dense=dense_vec,
                         top_k=top_k
                     )
-                    print("I have use dense search only")
                 print(f"[LATENCY] search({doc_id}): {time.perf_counter() - t_search:.4f}s")
                 all_matches.extend(matches)
 

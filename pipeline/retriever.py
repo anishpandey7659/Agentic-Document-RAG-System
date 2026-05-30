@@ -5,6 +5,7 @@ from pipeline.rerank import Reranker
 from core.config import Tool_MODEL
 import time
 
+
 NO_CONTENT_MSG = "No relevant content found for your query."
 
 
@@ -59,7 +60,7 @@ Answer:"""
         )
 
 
-    def retrieve_and_answer(
+    def retrieve_chunks(
         self,
         query: str,
         query_embedding: List[float],
@@ -68,39 +69,54 @@ Answer:"""
         top_k: int = 6,
         top_n: int = 3,
         show_chunks: bool = False,
-        stream: bool = False,
+    ) -> List[Dict]:
+        """Step 1 — retrieval + rerank only, no LLM call."""
 
-    ) -> Union[Dict, Generator]:
-        
         t_retrieve = time.perf_counter()
-        if mode =="hybrid":
-            matches = self._smart_search.search(query,query_embedding, mode,alpha,top_k)
+        if mode == "hybrid":
+            matches = self._smart_search.search(query, query_embedding, mode, alpha, top_k)
         else:
             matches = self._smart_search.search(query, query_embedding, mode, top_k)
-        print(f"[Latency] Retrieval: {time.perf_counter()-t_retrieve:.4f}s")
+        # print(f"[Latency] Retrieval: {time.perf_counter()-t_retrieve:.4f}s")
 
         if not matches:
-            return self._empty_response(stream)
+            return []
+
         t_rerank = time.perf_counter()
         reranked = self._reranker.rerank(query, matches, top_n)
         print(f"[Latency] Reranking: {time.perf_counter()-t_rerank:.4f}s")
-        if not reranked:
-            return self._empty_response(stream)
 
         if show_chunks:
             self._log_chunks(reranked)
+
+        return reranked or []
+
+
+    def answer_from_chunks(
+        self,
+        query: str,
+        chunks: List[Dict],
+        stream: bool = False,
+    ) -> Union[Dict, Generator]:
+        """Step 2 — LLM call only, chunks already retrieved."""
+
+        if not chunks:
+            return self._empty_response(stream)
+
         t_context = time.perf_counter()
-        context = SmartSearch.build_context(reranked)
+        context = SmartSearch.build_context(chunks)
         print(f"[Latency] Context Building: {time.perf_counter()-t_context:.4f}s")
 
         if stream:
-            return self._stream_response(query, context, reranked)
+            return self._stream_response(query, context, chunks)
+
         t_generation = time.perf_counter()
         answer = self._answer_with_context(query, context)
         print(f"[Latency] Answer Generation: {time.perf_counter()-t_generation:.4f}s")
+
         return {
             "answer":  answer.choices[0].message.content.strip(),
-            "sources": reranked
+            "sources": chunks
         }
 
 

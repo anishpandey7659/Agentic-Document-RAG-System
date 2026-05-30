@@ -1,17 +1,22 @@
 from core.dependencies import (
     retrieval_router, 
     memory_store,
-    memory,
+    memory,embedder,retriever,memory,embedder
 )
+from cache.semantic_cache import SemanticCache
+from cache.llmresponsecache import LLMResponseCache
 from agents.rag_agent import RAGAgent
 conv_id="4cfaf3fb-4a3d-4d0d-9147-70da25ed485d"
-# rag = RAGAgent(
-#         retriever,
-#         retrieval_router,
-#         memory_store,
-#         memory,
-#         conv_id
-#     )
+rag = RAGAgent(
+        retriever,
+        retrieval_router,
+        memory_store,
+        embedder,
+        memory,
+        conv_id,
+        SemanticCache(),
+        LLMResponseCache()
+    )
 
 
 
@@ -19,7 +24,7 @@ import time
 
 if __name__ == "__main__":
     start_time = time.time() 
-    query = "MAke the complete report about the recent political incident from nepal."
+    query = "Implement the Deep Agent in langchain and also explain it in brief?"
 
     conv_id="4cfaf3fb-4a3d-4d0d-9147-70da25ed485d"
 

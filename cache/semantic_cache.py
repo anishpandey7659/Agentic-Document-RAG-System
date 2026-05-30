@@ -9,14 +9,14 @@ from cache.redis_client import r
 class SemanticCache:
 
     def __init__(self, threshold=0.90):
-        self.r = r
+        self._r = r
         self.threshold = threshold
 
     def find(self, query_emb):
-        keys = self.r.keys("sem:*")
+        keys = self._r.keys("sem:*")
 
         for k in keys:
-            item = json.loads(self.r.get(k))
+            item = json.loads(self._r.get(k))
             score = self.cosine(query_emb, item["emb"])
 
             if score > self.threshold:
@@ -30,10 +30,11 @@ class SemanticCache:
         return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
 
 
-    def store(self, query, emb, answer):
+    def store(self, query, emb, answer,chunks):
         key = "sem:" + hashlib.sha256(query.encode()).hexdigest()
 
-        self.r.set(key, json.dumps({
+        self._r.set(key, json.dumps({
             "emb": emb,
-            "answer": answer
+            "answer": answer,
+            "chunks": chunks
         }))
